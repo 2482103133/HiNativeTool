@@ -5,5 +5,5 @@
 2.显示提问者的回答数和问题数  
 ### 预览
 [0]:https://github.com/2482103133/HiNativeTool/raw/HinativeTool
-颜色偏黄是因为最近上火
+颜色偏黄是因为最近上火  
 ![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview.png)
