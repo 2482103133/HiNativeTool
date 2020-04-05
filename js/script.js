@@ -1,4 +1,3 @@
-// extension_enabled=true
 $(document).ready(function () {
     // https://hinative.com/en-US 只监听qeustions路径
     if (!window.location.pathname.match(/^\/[^\/]*$/))
@@ -6,8 +5,8 @@ $(document).ready(function () {
 
     //监听blocks变化
     setInterval(() => {
-        if(extension_enabled)
-        handler()
+        if (extension_enabled)
+            handler()
     }, 200);
 })
 
@@ -35,20 +34,19 @@ function handler() {
             // $(ele).find(".username")
             // console.log(href)
             var b_block = $(this).get(0)
-            var usr =  $(this).find(".username").text()
+            var usr = $(this).find(".username").text()
 
             //如果该用户已经加载过了就不用了
             if (typeof result_buffer[usr] === "undefined") {
-                
+
             }
             else {
-                if(!b_block.painted)
-                {
-                  
+                if (!b_block.painted) {
+
                     console.log("buffered:" + usr)
-                do_painting(b_block, result_buffer[usr].txt)
+                    do_painting(b_block, result_buffer[usr].txt)
                 }
-                
+
                 return
             }
 
@@ -68,10 +66,9 @@ function handler() {
                     var p_url = null
                     //获得用户profileurl
                     do {
-                        if(i>=matches.length)
-                        {
+                        if (i >= matches.length) {
                             //未能找到matches
-                            return 
+                            return
                         }
                         var p_url = matches[i]
 
@@ -88,7 +85,7 @@ function handler() {
                         // console.log("profile")
 
                         var txt = evt1.srcElement.response
-                        result_buffer[usr] = {txt:txt,block:b_block}
+                        result_buffer[usr] = { txt: txt, block: b_block }
 
                         do_painting(b_block, txt)
                     })
@@ -106,22 +103,43 @@ function handler() {
         blocking = false
         // console.log("cancel blokcing")
     }
+}
+var blocking_user = false
+var blocked_users = []
+chrome.storage.sync.get(["blocked_users"], function (rslt) {
+    blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
+})
 
-
+function add_block(user_name) {
+    blocked_users.push(user_name)
+    chrome.storage.sync.set({ "blocked_users": blocked_users })
 }
 
 //对需要框框上色
 function do_painting(ele, txt) {
+    var usr = $(ele).find(".username")
+    var wrp = $(ele).find(".username_wrapper")
     //获得反应率以及其他信息
     var matches = txt.match(/level_\d/)
     try {
         matches.length
     } catch (error) {
-        console.log("发现萌新"+ $(ele).find(".username").text())
-        console.log("txt:" + {error:error,txt:txt})
+        console.log("发现萌新" + $(ele).find(".username").text())
+        wrp.append("<b>New~</b>")
+        // $(ele).find(".username")
     }
+
+    //如果是被屏蔽的用户
+    if (blocked_users.indexOf(usr.text()) > -1) {
+        console.log("已隐藏用户:" + usr.text())
+        ele.style.display = "none"
+    }
+   
+   
+
+
     if (matches != null) {
-        //获得用户profileurl
+        //获得用户profile rate
 
         var rate = matches[0]
         // console.log(rate)
@@ -149,15 +167,24 @@ function do_painting(ele, txt) {
     // console.log(txt)
     var q_n = numbers[0]
     var a_n = numbers[1]
-    var usr = $(ele).find(".username")
-    var wrp = $(ele).find(".username_wrapper")
+
     usr.get(0).style.fontWeight = "bold"
     usr.get(0).style.color = "black"
     usr.get(0).style.fontSize = "25"
     wrp.append($("<span>" + " Q:" + q_n + " A:" + a_n + "</span>"))
+    
+    //添加屏蔽选项
+    var a = $("<a> block</a>")
+    a.before("&nbsp;")
+    a.click(function (e) {
+        e.preventDefault()
+        add_block(usr.text())
+        do_painting(ele, txt)
+    })
+    wrp.append(a)
 
     //设置一个painted属性
-    ele.painted=true
+    ele.painted = true
     // usr.text(usr.text()+" Q:"+q_n+" A:"+a_n)
 }
 

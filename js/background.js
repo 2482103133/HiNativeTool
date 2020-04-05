@@ -17,10 +17,14 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
-chrome.storage.sync.set( {"extension_enabled":false})
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  
   chrome.storage.sync.get(["extension_enabled"], function (result) {
+    if(typeof result.extension_enabled ==="undefined")
+    {
+      chrome.storage.sync.set( {"extension_enabled":true})
+      result.extension_enabled=true
+    }
+    
     chrome.tabs.executeScript({
       code: 'extension_enabled=' + result.extension_enabled
     },() => chrome.runtime.lastError);
