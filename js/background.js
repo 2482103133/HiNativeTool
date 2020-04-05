@@ -23,7 +23,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   chrome.storage.sync.get(["extension_enabled"], function (result) {
     chrome.tabs.executeScript({
       code: 'extension_enabled=' + result.extension_enabled
-    });
+    },() => chrome.runtime.lastError);
   });
 
 });

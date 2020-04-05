@@ -7,7 +7,7 @@
     "activeTab",
     "storage",
     "declarativeContent",
-    "*://hinative.com/*-*"
+    "*://hinative.com/*"
   ],
   "page_action": {
     "default_popup": "html/popup.html"
