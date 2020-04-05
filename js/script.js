@@ -39,17 +39,21 @@ function handler() {
             var b_block = $(this).get(0)
             var usr = $(this).find(".username").text()
 
+            if(b_block.painted==true){
+                return
+            }
             //如果该用户已经加载过了就不用了
             if (typeof result_buffer[usr] === "undefined") {
-
+                //没有加载过就继续
             }
             else {
-                if (!b_block.painted) {
 
-                    console.log("buffered:" + usr)
+                //如果是新的方块则重新画一遍
+                if (b_block.painted != true) {
+                    console.log("buffered:" + usr + " b_block.painted:" + b_block.painted)
                     do_painting(b_block, result_buffer[usr].txt)
-                }
 
+                }
                 return
             }
 
@@ -80,8 +84,6 @@ function handler() {
                     //判断不是自己的主页
                     while (p_url == matches[0])
 
-
-
                     var req = new XMLHttpRequest();
                     req.addEventListener("load", function (evt1) {
                         var p_url = p_url
@@ -89,8 +91,12 @@ function handler() {
 
                         var txt = evt1.srcElement.response
                         result_buffer[usr] = { txt: txt, block: b_block }
-
+                        if(b_block.painted==true){
+                            return
+                        }
                         do_painting(b_block, txt)
+                        console.log("add buffer:" + usr + "b_block.painted:" + b_block.painted)
+
                     })
 
                     req.open("GET", p_url);
@@ -116,75 +122,81 @@ chrome.storage.sync.get(["blocked_users"], function (rslt) {
 
 function add_block(user_name) {
     blocked_users.push(user_name)
-    blocked_users=Array.from(new Set(blocked_users))
+    blocked_users = Array.from(new Set(blocked_users))
     chrome.storage.sync.set({ "blocked_users": blocked_users })
 }
 
-var blocked_blocks=new Set()
-var filling_blocks_count=0
+var blocked_blocks = new Set()
+var filling_blocks_count = 0
 //对需要框框上色
 function do_painting(ele, txt) {
+    //设置一个painted属性
+    ele.painted = true
     var usr = $(ele).find(".username")
     var wrp = $(ele).find(".username_wrapper")
     //获得反应率以及其他信息
     var matches = txt.match(/level_\d/)
-    var is_auto_blocked=false
+    var is_auto_blocked = false
     try {
         matches.length
     } catch (error) {
-       
+
         console.log("发现萌新" + $(ele).find(".username").text())
-        wrp.append("<b>New~</b>")
+        // wrp.append("<b>New~</b>")
         // $(ele).find(".username")
     }
-
+    var color = "white"
     if (matches != null) {
         //获得用户profile rate
         var rate = matches[0]
+        
         switch (rate) {
             case "level_1":
-                ele.style.backgroundColor = "red"
-                is_auto_blocked=true
+                color = "red"
+                is_auto_blocked = true
                 break;
             case "level_2":
-                ele.style.backgroundColor = "orange"
-                is_auto_blocked=true
+                color = "orange"
+                is_auto_blocked = true
                 break;
             case "level_3":
-                ele.style.backgroundColor = "#ffff80"
+                color = "#ffff80"
                 break;
             case "level_4":
-                ele.style.backgroundColor = "green"
+                color = "green"
                 break;
+            
         }
     }
-    if(is_auto_blocked&&auto_block)
-    add_block(usr.text())
+    
+    wrp.append("<span style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
+
+
+    if (is_auto_blocked && auto_block)
+        add_block(usr.text())
 
     //如果是被屏蔽的用户
     if (blocked_users.indexOf(usr.text()) > -1) {
         blocked_blocks.add(ele)
 
-        if($("#blocked_blocks").length==0)
-        $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:"+blocked_blocks.length+"</span>")
-        else{
-            $("#blocked_blocks").text("blocked quesions count:"+blocked_blocks.size)
+        if ($("#blocked_blocks").length == 0)
+            $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
+        else {
+            $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
         }
 
         console.log("已隐藏用户问题:" + usr.text())
         $(ele).remove();
         ele.style.visibility = "hidden"
         //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-        if(filling_blocks_count<3)
-        {
+        if (filling_blocks_count < 3) {
             filling_blocks_count++
             $(document.body).append($(ele))
         }
-        
+
     }
 
     //获得featured users number to-do :not likely
-
 
     //获得questions number
     var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
@@ -196,7 +208,7 @@ function do_painting(ele, txt) {
     usr.get(0).style.color = "black"
     usr.get(0).style.fontSize = "25"
     wrp.append($("<span>" + " Q:" + q_n + " A:" + a_n + "</span>"))
-    
+
     //添加屏蔽选项
     var a = $("<a> block</a>")
     a.before("&nbsp;")
@@ -205,13 +217,12 @@ function do_painting(ele, txt) {
         add_block(usr.text())
         do_painting(ele, txt)
     })
+
     wrp.append(a)
 
-    //设置一个painted属性
-    ele.painted = true
     // usr.text(usr.text()+" Q:"+q_n+" A:"+a_n)
 
-    
+
 }
 
 
