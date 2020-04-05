@@ -68,6 +68,11 @@ function handler() {
                     var p_url = null
                     //获得用户profileurl
                     do {
+                        if(i>=matches.length)
+                        {
+                            //未能找到matches
+                            return 
+                        }
                         var p_url = matches[i]
 
                         i++
