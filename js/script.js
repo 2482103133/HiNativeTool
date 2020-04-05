@@ -143,7 +143,7 @@ function do_painting(ele, txt) {
             $("#blocked_blocks").text("blocked quesions count:"+blocked_blocks.size)
         }
 
-        console.log("已隐藏用户:" + usr.text())
+        console.log("已隐藏用户问题:" + usr.text())
         ele.style.display = "none"
     }
    
