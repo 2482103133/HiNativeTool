@@ -8,7 +8,10 @@ $(document).ready(function () {
         if (extension_enabled)
             handler()
     }, 200);
+
+    $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
 })
+
 
 var result_buffer = {}
 var last_blocks_count = 0
@@ -171,12 +174,13 @@ function do_painting(ele, txt) {
         console.log("已隐藏用户问题:" + usr.text())
         $(ele).remove();
         ele.style.visibility = "hidden"
-        // ele.style.display = "none"
-        if(filling_blocks_count<4)
+        //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
+        if(filling_blocks_count<3)
         {
             filling_blocks_count++
             $(document.body).append($(ele))
         }
+        
     }
 
     //获得featured users number to-do :not likely
