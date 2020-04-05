@@ -172,7 +172,7 @@ function do_painting(ele, txt) {
         $(ele).remove();
         ele.style.visibility = "hidden"
         // ele.style.display = "none"
-        if(filling_blocks_count<10)
+        if(filling_blocks_count<4)
         {
             filling_blocks_count++
             $(document.body).append($(ele))
