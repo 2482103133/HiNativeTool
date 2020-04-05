@@ -117,6 +117,7 @@ function add_block(user_name) {
     chrome.storage.sync.set({ "blocked_users": blocked_users })
 }
 
+var blocked_blocks=new Set()
 //对需要框框上色
 function do_painting(ele, txt) {
     var usr = $(ele).find(".username")
@@ -126,6 +127,7 @@ function do_painting(ele, txt) {
     try {
         matches.length
     } catch (error) {
+       
         console.log("发现萌新" + $(ele).find(".username").text())
         wrp.append("<b>New~</b>")
         // $(ele).find(".username")
@@ -133,6 +135,14 @@ function do_painting(ele, txt) {
 
     //如果是被屏蔽的用户
     if (blocked_users.indexOf(usr.text()) > -1) {
+        blocked_blocks.add(ele)
+
+        if($("#blocked_blocks").length==0)
+        $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:"+blocked_blocks.length+"</span>")
+        else{
+            $("#blocked_blocks").text("blocked quesions count:"+blocked_blocks.size)
+        }
+
         console.log("已隐藏用户:" + usr.text())
         ele.style.display = "none"
     }
