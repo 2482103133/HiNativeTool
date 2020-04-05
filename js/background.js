@@ -17,18 +17,32 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
+
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  chrome.storage.sync.get(["extension_enabled"], function (result) {
-    if(typeof result.extension_enabled ==="undefined")
-    {
-      chrome.storage.sync.set( {"extension_enabled":true})
-      result.extension_enabled=true
-    }
-    
-    chrome.tabs.executeScript({
-      code: 'extension_enabled=' + result.extension_enabled
-    },() => chrome.runtime.lastError);
-  });
+  add_script_value("extension_enabled",true)
+  add_script_value("auto_block",false)
 
 });
+
+
+
+function add_script_value(key,dflt){
+  var key=key
+  var dflt=dflt
+  chrome.storage.sync.get([key], function (result) {
+
+    if(typeof result[key] ==="undefined")
+    {
+      var obj={}
+      obj[key]=dflt
+      chrome.storage.sync.set(obj)
+      result[key]=dflt
+    }
+    console.log(key+'=' + result[key])
+    chrome.tabs.executeScript({
+      code: key+'=' + result[key]
+    },() => chrome.runtime.lastError);
+  });
+}
 

@@ -118,12 +118,14 @@ function add_block(user_name) {
 }
 
 var blocked_blocks=new Set()
+var filling_blocks_count=0
 //对需要框框上色
 function do_painting(ele, txt) {
     var usr = $(ele).find(".username")
     var wrp = $(ele).find(".username_wrapper")
     //获得反应率以及其他信息
     var matches = txt.match(/level_\d/)
+    var is_auto_blocked=false
     try {
         matches.length
     } catch (error) {
@@ -132,6 +134,29 @@ function do_painting(ele, txt) {
         wrp.append("<b>New~</b>")
         // $(ele).find(".username")
     }
+
+    if (matches != null) {
+        //获得用户profile rate
+        var rate = matches[0]
+        switch (rate) {
+            case "level_1":
+                ele.style.backgroundColor = "red"
+                is_auto_blocked=true
+                break;
+            case "level_2":
+                ele.style.backgroundColor = "orange"
+                is_auto_blocked=true
+                break;
+            case "level_3":
+                ele.style.backgroundColor = "#ffff80"
+                break;
+            case "level_4":
+                ele.style.backgroundColor = "green"
+                break;
+        }
+    }
+    if(is_auto_blocked&&auto_block)
+    add_block(usr.text())
 
     //如果是被屏蔽的用户
     if (blocked_users.indexOf(usr.text()) > -1) {
@@ -144,30 +169,13 @@ function do_painting(ele, txt) {
         }
 
         console.log("已隐藏用户问题:" + usr.text())
-        ele.style.display = "none"
-    }
-   
-   
-
-
-    if (matches != null) {
-        //获得用户profile rate
-
-        var rate = matches[0]
-        // console.log(rate)
-        switch (rate) {
-            case "level_1":
-                ele.style.backgroundColor = "red"
-                break;
-            case "level_2":
-                ele.style.backgroundColor = "orange"
-                break;
-            case "level_3":
-                ele.style.backgroundColor = "#ffff80"
-                break;
-            case "level_4":
-                ele.style.backgroundColor = "green"
-                break;
+        $(ele).remove();
+        ele.style.visibility = "hidden"
+        // ele.style.display = "none"
+        if(filling_blocks_count<10)
+        {
+            filling_blocks_count++
+            $(document.body).append($(ele))
         }
     }
 
@@ -198,6 +206,8 @@ function do_painting(ele, txt) {
     //设置一个painted属性
     ele.painted = true
     // usr.text(usr.text()+" Q:"+q_n+" A:"+a_n)
+
+    
 }
 
 
