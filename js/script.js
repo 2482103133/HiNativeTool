@@ -145,7 +145,7 @@ function do_painting(ele, txt) {
 
 
     //获得questions number
-    var numbers = txt.match(/(?<=font_numbers_large['"]>)\d+/g)
+    var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
     // console.log(txt)
     var q_n = numbers[0]
     var a_n = numbers[1]
