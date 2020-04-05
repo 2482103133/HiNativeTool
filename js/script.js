@@ -106,12 +106,14 @@ function handler() {
 }
 var blocking_user = false
 var blocked_users = []
+// chrome.storage.sync.set({ "blocked_users": []})
 chrome.storage.sync.get(["blocked_users"], function (rslt) {
     blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
 })
 
 function add_block(user_name) {
     blocked_users.push(user_name)
+    blocked_users=Array.from(new Set(blocked_users))
     chrome.storage.sync.set({ "blocked_users": blocked_users })
 }
 
