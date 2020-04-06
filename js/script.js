@@ -75,8 +75,9 @@ function handler() {
                     //获得用户profileurl
                     do {
                         if (i >= matches.length) {
-                            //未能找到matches
-                            return
+                            //未能找到matches,暂时认为是自己本人
+                            console.log("can't find another user profile link!")
+                            break
                         }
                         var p_url = matches[i]
 
