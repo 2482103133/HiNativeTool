@@ -39,6 +39,8 @@ function handler() {
             var b_block = $(this).get(0)
             var usr = $(this).find(".username").text()
 
+            check_block(b_block)
+
             if(b_block.painted==true){
                 return
             }
@@ -175,26 +177,7 @@ function do_painting(ele, txt) {
     if (is_auto_blocked && auto_block)
         add_block(usr.text())
 
-    //如果是被屏蔽的用户
-    if (blocked_users.indexOf(usr.text()) > -1) {
-        blocked_blocks.add(ele)
-
-        if ($("#blocked_blocks").length == 0)
-            $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
-        else {
-            $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
-        }
-
-        console.log("已隐藏用户问题:" + usr.text())
-        $(ele).remove();
-        ele.style.visibility = "hidden"
-        //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-        if (filling_blocks_count < 3) {
-            filling_blocks_count++
-            $(document.body).append($(ele))
-        }
-
-    }
+    check_block(ele)
 
     //获得featured users number to-do :not likely
 
@@ -220,9 +203,35 @@ function do_painting(ele, txt) {
 
     wrp.append(a)
 
-    // usr.text(usr.text()+" Q:"+q_n+" A:"+a_n)
+}
+function check_block(ele){
+    if(blocked_blocks.has(ele))
+    return
+    var usr = $(ele).find(".username")
 
+    if (blocked_users.indexOf(usr.text()) > -1) {
+    blocked_blocks.add(ele)
+  
+    if ($("#blocked_blocks").length == 0)
+        $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
+    else {
+        $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
+    }
 
+    console.log("已隐藏用户问题:" + usr.text())
+   
+    //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
+    if (filling_blocks_count < 5) {
+        console.log("hide")
+        filling_blocks_count++
+        ele.style.visibility = "hidden"
+        $("body").after($(ele).detach())
+        // $(ele).appendTo("body");
+    }
+    else{
+        ele.style.display="none"
+    }
+    }
 }
 
 
