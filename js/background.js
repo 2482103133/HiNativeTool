@@ -31,13 +31,13 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 function add_script_value(key,dflt){
   var key=key
   var dflt=dflt
-  chrome.storage.sync.get([key], function (result) {
+  chrome.storage.local.get([key], function (result) {
 
     if(typeof result[key] ==="undefined")
     {
       var obj={}
       obj[key]=dflt
-      chrome.storage.sync.set(obj)
+      chrome.storage.local.set(obj)
       result[key]=dflt
     }
     console.log(key+'=' + result[key])

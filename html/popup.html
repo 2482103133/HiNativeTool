@@ -2,11 +2,29 @@
 <html>
 <head>
 </head>
-<body>
-  turn on/off:<input id="switch" type="checkbox"  /><br/>
-  auto block:<input id="auto" type="checkbox" /><br/>
-  featured answer:<input id="featured" type="checkbox"  /><br/>
-  <br/>
+<body style="width: 300px;height: 500px;">
+
+  <table >
+      <thead><tr>Options</tr></thead>
+      <tbody>
+          <tr>
+          <td>turn on:</td>
+          <td><input id="switch" type="checkbox"  /><br/></td>
+        </tr>
+          <tr>
+          <td>auto block:</td>
+          <td><input id="auto" type="checkbox" /><br/></td>
+        </tr>
+          <tr>
+          <td>featured answer:</td>
+          <td><input id="featured" type="checkbox"  /><br/></td>
+        </tr>
+          <tr>
+          <td> clear cached data:</td>
+          <td><input id="cached" type="button" /><br/></td>
+        </tr>
+      </tbody>
+  </table>
   <table >
     <thead><tr>Blocked Users</tr></thead>
     <tbody id="blocked_users">

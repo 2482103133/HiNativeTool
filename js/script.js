@@ -39,7 +39,7 @@ function handler() {
 
             //如果是屏蔽用户则不用画
             if (!check_block(b_block)) {
-                console.log("return:" + usr)
+                //console.log("return:" + usr)
                 return
             }
 
@@ -51,16 +51,17 @@ function handler() {
             //如果该用户已经加载过了就不用了
             if (typeof result_buffer[usr] === "undefined") {
                 //没有加载过就继续
+                console.log("usr not in buffer:" + usr)
 
             }
+
             else {
                 //已经加载过了
                 //如果是新的方块则重新画一遍
                 do_painting(b_block, result_buffer[usr].txt)
-
                 return
             }
-
+            
             //发送请求
             var oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
@@ -93,7 +94,7 @@ function handler() {
                             return
                         }
                         result_buffer[usr] = { txt: txt, block: b_block }
-                        
+                        if(!need_featured_answer)
                         update_result_buffer()
 
                         do_painting(b_block, txt)
@@ -104,10 +105,13 @@ function handler() {
                             var q_url = p_url1 + "/questions"
                             var req = new XMLHttpRequest();
 
-                            req.addEventListener("load", function (evt) {
 
-                                console.log("quesions page:" + usr)
-                                console.log("url:" + q_url)
+                            req.addEventListener("load", function (evt) {
+                                
+                                var b_block1=b_block
+
+                                //console.log("quesions page:" + usr)
+                                //console.log("url:" + q_url)
                                 var qtxt = evt.srcElement.response
 
                                 var html = $.parseHTML(qtxt)
@@ -115,17 +119,17 @@ function handler() {
                                 // console.log(qtxt)
                                 //获得第一页回答的问题
                                 var blocks = page.find(".d_block")
-                                console.log("parsed blocks count:" + blocks.length)
+                                //console.log("parsed blocks count:" + blocks.length)
                                 var blocks_count = 0
                                 result_buffer[usr].answers = 0
 
                                 blocks.each(function () {
 
                                     var badge = $($(this).find(".badge").get(0)).text().trim()
-                                    console.log("usr:" + usr + " badge:" + badge)
+                                    //console.log("usr:" + usr + " badge:" + badge)
                                     //如果无人回答则不计入
                                     if (badge == "0") {
-                                        console.log("skipped quesition")
+                                        //console.log("skipped quesition")
                                         return
                                     }
 
@@ -133,12 +137,13 @@ function handler() {
                                     var fq_url = this.href
                                     var req = new XMLHttpRequest();
 
-                                    console.log("loading question:" + fq_url)
+                                    //console.log("loading question:" + fq_url)
                                     req.addEventListener("load", function (evt) {
+                                        var b_block2=b_block1
                                         // var q_url=q_url
                                         var usr1 = usr
                                         var buffer = result_buffer[usr1]
-                                        console.log("loaded question:" + fq_url)
+                                        //console.log("loaded question:" + fq_url)
                                         var qtxt1 = evt.srcElement.response
                                         if (typeof buffer.featured_answers === "undefined") {
                                             buffer.featured_answers = 0
@@ -150,12 +155,24 @@ function handler() {
                                         else {
                                             //未被采纳
                                         }
+
                                         buffer.answers++
 
-                                        console.log("usr:" + usr1 + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
                                         //当所有的都加载完
                                         if (blocks_count == buffer.answers) {
-                                            do_featrued_painting(b_block)
+                                            console.log("usr:" + usr1 + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                                            
+                                            //将所有同名的block都加上rate
+                                            $(".d_block").each(function(){
+                                                if(this.featrued_painted!=true)
+                                                {
+                                                    var a_usr= $(this).find(".username")
+                                                    if(a_usr.text()==usr1)
+                                                    {
+                                                        do_featrued_painting(this)
+                                                    }
+                                                }
+                                        })
                                             update_result_buffer()
                                         }
                                     })
@@ -173,39 +190,43 @@ function handler() {
                     req.send()
                 }
             });
-            
+
             oReq.open("GET", href);
             oReq.send();
         })
 
     } finally {
         blocking = false
-        // console.log("cancel blokcing")
     }
 }
 
 var blocking_user = false
 var blocked_users = []
-// chrome.storage.sync.set({ "blocked_users": []})
-chrome.storage.sync.set({ "result_buffer": {}})
-chrome.storage.sync.get(["blocked_users","result_buffer"], function (rslt) {
+// chrome.storage.local.set({ "blocked_users": [] })
+// chrome.storage.local.set({ "result_buffer": {} })
+
+chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
     blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
     result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
     console.log("read result_buffer:")
-    console.log(rslt.result_buffer)
+    //console.log(result_buffer)
+    //console.log(result_buffer.bubusan24)
+    // resolve(rslt)
     date_loaded = true
 })
 
-function update_result_buffer(){
-    console.log("update result buffer:"+result_buffer)
-    console.log(result_buffer)
-    chrome.storage.sync.set({"result_buffer":result_buffer})
+
+
+function update_result_buffer() {
+    //console.log("update result buffer:" + result_buffer)
+    //console.log(result_buffer)
+    chrome.storage.local.set({ "result_buffer": result_buffer })
 }
 
-function add_block(user_name) {
+function block_user(user_name) {
     blocked_users.push(user_name)
     blocked_users = Array.from(new Set(blocked_users))
-    chrome.storage.sync.set({ "blocked_users": blocked_users })
+    chrome.storage.local.set({ "blocked_users": blocked_users })
 }
 
 var blocked_blocks = new Set()
@@ -253,6 +274,7 @@ function do_painting(ele, txt) {
 
     //获得featured users number to-do :not likely
 
+
     //获得questions number
     var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
     // console.log(txt)
@@ -269,31 +291,34 @@ function do_painting(ele, txt) {
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
-        add_block(usr.text())
+        block_user(usr.text())
         do_painting(ele, txt)
     })
     wrp.append(a)
 
+    
     //如果没有划过feture answer则画一次
     if (ele.featrued_painted != true && typeof result_buffer[usr.text()].featured_answers != "undefined") {
-        var rate_too_low = !do_featrued_painting(ele)
+        // var rate_too_low = !
+        
+        do_featrued_painting(ele)
+        // console.log("usr:"+usr.text()+" rate too low:"+rate_too_low)
         //如果rate过低,则可以自动屏蔽
-        auto_block = is_auto_blocked && rate_too_low
+        // is_auto_blocked = is_auto_blocked || rate_too_low
     }
 
-
     if (is_auto_blocked && auto_block)
-        add_block(usr.text())
+        block_user(usr.text())
 
     check_block(ele)
 
 }
-// function do_quesions_painting(ele) 
 
 function do_featrued_painting(ele) {
     ele.featrued_painted = true
     var usr = $(ele).find(".username")
     var wrp = $(ele).find(".username_wrapper")
+  
 
     var a = result_buffer[usr.text()].answers
     var f = result_buffer[usr.text()].featured_answers
@@ -301,6 +326,11 @@ function do_featrued_painting(ele) {
     wrp.append("<span class='rate_badage'> rate:" + rate + "</span>")
     if (rate == 0) {
         $(ele).find(".rate_badge").css("background-color", "red")
+        if(auto_block)
+        {
+            block_user(usr.text())
+            check_block(ele)
+        }
         return false
     }
 

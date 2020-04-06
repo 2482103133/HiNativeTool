@@ -1,7 +1,7 @@
 function SetBinding(key,check){
     var key=key
     var check=check
-    chrome.storage.sync.get([key],function(result){
+    chrome.storage.local.get([key],function(result){
         console.log("result:"+result[key])
         $(check).attr("checked",result[key])
         set_status()
@@ -20,16 +20,38 @@ function SetBinding(key,check){
         },() => chrome.runtime.lastError);
         var obj={}
         obj[key]=checked
-        chrome.storage.sync.set(obj)
+        chrome.storage.local.set(obj)
     }
 }
 SetBinding("extension_enabled",$("#switch").get(0))
 SetBinding("auto_block",$("#auto").get(0))
 SetBinding("need_featured_answer",$("#featured").get(0))
 
+$("#featured").click(function(e){
+
+    if($(this).is(":checked"))
+    {
+        if(confirm("Warning:Cache will be cleared,continue?")){
+            clear_cache()
+        }
+        else{
+            e.preventDefault()
+        }
+    }
+})
+
+//清空缓存的用户数据
+$("#cached").click(function(){
+   clear_cache()
+})
+function clear_cache(){
+    chrome.storage.local.set({"result_buffer":{}},function(){
+        console.log("cache cleared!")
+    })
+}
 var blocking_user = false
 var blocked_users = []
-chrome.storage.sync.get(["blocked_users"], function (rslt) {
+chrome.storage.local.get(["blocked_users"], function (rslt) {
     blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
 
     show_blocked_users()
@@ -40,7 +62,7 @@ function remove_block(username){
     {
         blocked_users.splice(blocked_users.indexOf(username),1)
     }
-    chrome.storage.sync.set({blocked_users:blocked_users})
+    chrome.storage.local.set({blocked_users:blocked_users})
     show_blocked_users()
 }
 
