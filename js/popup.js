@@ -25,7 +25,7 @@ function SetBinding(key,check){
 }
 SetBinding("extension_enabled",$("#switch").get(0))
 SetBinding("auto_block",$("#auto").get(0))
-
+SetBinding("need_featured_answer",$("#featured").get(0))
 
 var blocking_user = false
 var blocked_users = []
