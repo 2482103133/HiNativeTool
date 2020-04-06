@@ -63,7 +63,7 @@ function remove_block(username){
         blocked_users.splice(blocked_users.indexOf(username),1)
     }
     chrome.storage.local.set({blocked_users:blocked_users})
-    show_blocked_users()
+    // show_blocked_users()
 }
 
 function show_blocked_users() {
@@ -72,9 +72,12 @@ function show_blocked_users() {
 
         var tr=$("<tr>")
         tr.append($("<td>"+u+"</td>"))
-        var a=$("<a href='#''>remove</a>")
+        var a=$("<a href='#'' style='text-decoration: none' title='Remove this user from blocking list'>❌</a>")
         a.click(function(){
+            $(this).closest("tr").hide()
+ 
             remove_block(u)
+               
         })
         var db=$("<td></td>")
         db.append(a)
