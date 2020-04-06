@@ -52,7 +52,7 @@ function handler() {
 
                 //如果是新的方块则重新画一遍
                 if (b_block.painted != true) {
-                    console.log("buffered:" + usr + " b_block.painted:" + b_block.painted)
+                    //console.log("buffered:" + usr + " b_block.painted:" + b_block.painted)
                     do_painting(b_block, result_buffer[usr].txt)
 
                 }
@@ -97,7 +97,7 @@ function handler() {
                             return
                         }
                         do_painting(b_block, txt)
-                        console.log("add buffer:" + usr + "b_block.painted:" + b_block.painted)
+                        //console.log("add buffer:" + usr + "b_block.painted:" + b_block.painted)
 
                     })
 
@@ -143,7 +143,7 @@ function do_painting(ele, txt) {
         matches.length
     } catch (error) {
 
-        console.log("发现萌新" + $(ele).find(".username").text())
+        //console.log("发现萌新" + $(ele).find(".username").text())
         // wrp.append("<b>New~</b>")
         // $(ele).find(".username")
     }
@@ -222,7 +222,7 @@ function check_block(ele){
    
     //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
     if (filling_blocks_count < 5) {
-        console.log("hide")
+        // console.log("hide")
         filling_blocks_count++
         ele.style.visibility = "hidden"
         $("body").after($(ele).detach())
