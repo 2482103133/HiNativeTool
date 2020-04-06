@@ -5,18 +5,26 @@ $(document).ready(function () {
 
     //监听blocks变化
     setInterval(() => {
-        if (extension_enabled || date_loaded)
+        if (extension_enabled || data_loaded)
             handler()
     }, 200);
 
     $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
 })
 
-
+//缓存的结果，减少xhr次数
 var result_buffer = {}
+//用来填充的个数
 var last_blocks_count = 0
+//现在是否正在blocking过程中
 var blocking = false
-var date_loaded = false
+//数据是否加载完
+var data_loaded = false
+//被屏蔽的用户列表
+var blocked_users = []
+
+
+//主要的执行过程
 function handler() {
     if ($(".d_block").length == last_blocks_count) {
         //每两百毫秒执行一次,判断是否需要新的查询
@@ -26,8 +34,9 @@ function handler() {
         console.log("blokcing")
         return
     }
-
+    //阻塞标示，以免两个interval同时运行，造成多次paint
     blocking = true
+
     last_blocks_count = $(".d_block").length
 
     try {
@@ -109,23 +118,19 @@ function handler() {
                             var req = new XMLHttpRequest();
 
 
+                            //请求该用户的提问页，用于得到问题的采纳率
                             req.addEventListener("load", function (evt) {
-
                                 var b_block1 = b_block
-
-                                //console.log("quesions page:" + usr)
-                                //console.log("url:" + q_url)
                                 var qtxt = evt.srcElement.response
-
                                 var html = $.parseHTML(qtxt)
                                 var page = $("<div>").append(html)
-                                // console.log(qtxt)
+          
                                 //获得第一页回答的问题
                                 var blocks = page.find(".d_block")
-                                //console.log("parsed blocks count:" + blocks.length)
                                 var blocks_count = 0
-                                result_buffer[usr].answers = 0
 
+                                //初始化总的有回复的提问数
+                                result_buffer[usr].answers = 0
                                 blocks.each(function () {
 
                                     var badge = $($(this).find(".badge").get(0)).text().trim()
@@ -140,13 +145,13 @@ function handler() {
                                     var fq_url = this.href
                                     var req = new XMLHttpRequest();
 
-                                    //console.log("loading question:" + fq_url)
+                                    //请求某一个问题的页面
                                     req.addEventListener("load", function (evt) {
                                         var b_block2 = b_block1
-                                        // var q_url=q_url
+                                
                                         var usr1 = usr
                                         var buffer = result_buffer[usr1]
-                                        //console.log("loaded question:" + fq_url)
+                             
                                         var qtxt1 = evt.srcElement.response
                                         if (typeof buffer.featured_answers === "undefined") {
                                             buffer.featured_answers = 0
@@ -161,7 +166,7 @@ function handler() {
 
                                         buffer.answers++
 
-                                        //当所有的都加载完
+                                        //当所有的问题都加载完，统计结果，并添加到缓存中
                                         if (blocks_count == buffer.answers) {
                                             console.log("usr:" + usr1 + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
 
@@ -174,19 +179,23 @@ function handler() {
                                                     }
                                                 }
                                             })
+
+                                            //更新数据到本地
                                             update_result_buffer()
                                         }
                                     })
+
                                     req.open("GET", fq_url);
                                     req.send();
 
                                 })
                             })
+
                             req.open("GET", q_url);
                             req.send();
-
                         }
                     })
+
                     req.open("GET", p_url);
                     req.send()
                 }
@@ -201,11 +210,11 @@ function handler() {
     }
 }
 
-var blocking_user = false
-var blocked_users = []
+
+
+//清楚缓存
 // chrome.storage.local.set({ blocked_users: [] })
 // chrome.storage.local.set({ result_buffer: {} })
-
 
 chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
     blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
@@ -213,7 +222,7 @@ chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
 
     console.log("read result_buffer count:" + Object.keys(result_buffer).length)
     console.log(result_buffer)
-    date_loaded = true
+    data_loaded = true
 })
 
 function update_result_buffer() {
@@ -319,6 +328,7 @@ function do_painting(ele) {
     check_block(ele)
 }
 
+//添加采纳率
 function do_featrued_painting(ele) {
     ele.featrued_painted = true
     var usr = $(ele).find(".username")
@@ -330,6 +340,7 @@ function do_featrued_painting(ele) {
     var rate = (f / a).toFixed(2)
     wrp.append("<span class='rate_badage'> rate:" + rate + "</span>")
     if (rate == 0) {
+        //如果采纳率为0，则标红
         $(ele).find(".rate_badge").css("background-color", "red")
         if (auto_block) {
             block_user(usr.text())
@@ -338,6 +349,7 @@ function do_featrued_painting(ele) {
         return false
     }
 
+    //采纳率大于0.6则标绿
     if (rate > 0.6) {
         $(ele).find(".rate_badge").css("background-color", "green")
     }
@@ -347,12 +359,14 @@ function do_featrued_painting(ele) {
 }
 //判断是否块块是否需要重绘
 function check_block(ele) {
+    //如果已经屏蔽，则不用画了
     if (blocked_blocks.has(ele))
         return false
 
     var usr = $(ele).find(".username")
 
     if (blocked_users.indexOf(usr.text()) > -1) {
+        //如果用户被屏蔽，则隐藏这个提问
         blocked_blocks.add(ele)
 
         if ($("#blocked_blocks").length == 0)
@@ -365,11 +379,9 @@ function check_block(ele) {
 
         //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
         if (filling_blocks_count < 5) {
-            // console.log("hide")
             filling_blocks_count++
             ele.style.visibility = "hidden"
             $("body").after($(ele).detach())
-            // $(ele).appendTo("body");
         }
         else {
             ele.style.display = "none"
