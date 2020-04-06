@@ -270,10 +270,8 @@ function do_painting(ele, txt) {
         }
     }
 
+    //添加色彩显示
     wrp.append("<span class='rate_badge' style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
-
-    //获得featured users number to-do :not likely
-
 
     //获得questions number
     var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
@@ -286,8 +284,20 @@ function do_painting(ele, txt) {
     usr.get(0).style.fontSize = "25"
     wrp.append($("<span>" + " Q:" + q_n + " A:" + a_n + "</span>"))
 
+    
+    
+    //如果没有划过feture answer则画一次
+    if (ele.featrued_painted != true && typeof result_buffer[usr.text()].featured_answers != "undefined") {
+        do_featrued_painting(ele)
+    }
+
+    //自动屏蔽
+    if (is_auto_blocked && auto_block)
+        block_user(usr.text())
+
+
     //添加屏蔽选项
-    var a = $("<a> block</a>")
+    var a = $("<a title='block this user'>❌</a>")
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
@@ -296,22 +306,7 @@ function do_painting(ele, txt) {
     })
     wrp.append(a)
 
-    
-    //如果没有划过feture answer则画一次
-    if (ele.featrued_painted != true && typeof result_buffer[usr.text()].featured_answers != "undefined") {
-        // var rate_too_low = !
-        
-        do_featrued_painting(ele)
-        // console.log("usr:"+usr.text()+" rate too low:"+rate_too_low)
-        //如果rate过低,则可以自动屏蔽
-        // is_auto_blocked = is_auto_blocked || rate_too_low
-    }
-
-    if (is_auto_blocked && auto_block)
-        block_user(usr.text())
-
     check_block(ele)
-
 }
 
 function do_featrued_painting(ele) {
