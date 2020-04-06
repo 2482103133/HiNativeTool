@@ -61,7 +61,7 @@ function handler() {
                 do_painting(b_block, result_buffer[usr].txt)
                 return
             }
-            
+
             //发送请求
             var oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
@@ -94,11 +94,13 @@ function handler() {
                         if (b_block.painted == true) {
                             return
                         }
-                        result_buffer[usr] = { txt: txt, block: b_block }
-                        if(!need_featured_answer)
-                        update_result_buffer()
 
-                        do_painting(b_block, txt)
+                        result_buffer[usr] = { info: get_paint_info(txt) }
+
+                        if (!need_featured_answer)
+                            update_result_buffer()
+
+                        do_painting(b_block)
 
                         if (need_featured_answer == true) {
                             //第一回答页面
@@ -108,8 +110,8 @@ function handler() {
 
 
                             req.addEventListener("load", function (evt) {
-                                
-                                var b_block1=b_block
+
+                                var b_block1 = b_block
 
                                 //console.log("quesions page:" + usr)
                                 //console.log("url:" + q_url)
@@ -140,7 +142,7 @@ function handler() {
 
                                     //console.log("loading question:" + fq_url)
                                     req.addEventListener("load", function (evt) {
-                                        var b_block2=b_block1
+                                        var b_block2 = b_block1
                                         // var q_url=q_url
                                         var usr1 = usr
                                         var buffer = result_buffer[usr1]
@@ -162,18 +164,16 @@ function handler() {
                                         //当所有的都加载完
                                         if (blocks_count == buffer.answers) {
                                             console.log("usr:" + usr1 + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-                                            
+
                                             //将所有同名的block都加上rate
-                                            $(".d_block").each(function(){
-                                                if(this.featrued_painted!=true)
-                                                {
-                                                    var a_usr= $(this).find(".username")
-                                                    if(a_usr.text()==usr1)
-                                                    {
+                                            $(".d_block").each(function () {
+                                                if (this.featrued_painted != true) {
+                                                    var a_usr = $(this).find(".username")
+                                                    if (a_usr.text() == usr1) {
                                                         do_featrued_painting(this)
                                                     }
                                                 }
-                                        })
+                                            })
                                             update_result_buffer()
                                         }
                                     })
@@ -203,24 +203,20 @@ function handler() {
 
 var blocking_user = false
 var blocked_users = []
-// chrome.storage.local.set({ "blocked_users": [] })
-// chrome.storage.local.set({ "result_buffer": {} })
+// chrome.storage.local.set({ blocked_users: [] })
+// chrome.storage.local.set({ result_buffer: {} })
+
 
 chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
     blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
     result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
-    console.log("read result_buffer:")
-    //console.log(result_buffer)
-    //console.log(result_buffer.bubusan24)
-    // resolve(rslt)
+
+    console.log("read result_buffer count:" + Object.keys(result_buffer).length)
+    console.log(result_buffer)
     date_loaded = true
 })
 
-
-
 function update_result_buffer() {
-    //console.log("update result buffer:" + result_buffer)
-    //console.log(result_buffer)
     chrome.storage.local.set({ "result_buffer": result_buffer })
 }
 
@@ -232,61 +228,75 @@ function block_user(user_name) {
 
 var blocked_blocks = new Set()
 var filling_blocks_count = 0
-//对需要框框上色
-function do_painting(ele, txt) {
-    //设置一个painted属性
-    ele.painted = true
-    var usr = $(ele).find(".username")
-    var wrp = $(ele).find(".username_wrapper")
+
+function get_paint_info(txt) {
 
     //获得反应率以及其他信息
     var matches = txt.match(/level_\d/)
+    var info = {}
 
-    //确认是否需要自动隐藏
-    var is_auto_blocked = false
-    try {
-        matches.length
-    } catch (error) {
-    }
     var color = "white"
     if (matches != null) {
         //获得用户profile rate
-        var rate = matches[0]
-
-        switch (rate) {
-            case "level_1":
-                color = "red"
-                is_auto_blocked = true
-                break;
-            case "level_2":
-                color = "orange"
-                is_auto_blocked = true
-                break;
-            case "level_3":
-                color = "#ffff80"
-                break;
-            case "level_4":
-                color = "green"
-                break;
-        }
+        info.rate = matches[0]
     }
-
-    //添加色彩显示
-    wrp.append("<span class='rate_badge' style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
 
     //获得questions number
     var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
     // console.log(txt)
-    var q_n = numbers[0]
-    var a_n = numbers[1]
+    info.q_n = numbers[0]
+    info.a_n = numbers[1]
+
+    return info
+}
+//对需要框框上色
+function do_painting(ele) {
+
+    //设置一个painted属性
+    ele.painted = true
+    var usr = $(ele).find(".username")
+    var wrp = $(ele).find(".username_wrapper")
+    var buffer = result_buffer[usr.text()]
+    var info = buffer.info
+
+    //确认是否需要自动隐藏
+    var is_auto_blocked = false
+
+    var color = "white"
+
+    //获得用户profile rate
+    var rate = info.rate
+
+    switch (rate) {
+        case "level_1":
+            color = "red"
+            is_auto_blocked = true
+            break;
+        case "level_2":
+            color = "orange"
+            is_auto_blocked = true
+            break;
+        case "level_3":
+            color = "#ffff80"
+            break;
+        case "level_4":
+            color = "green"
+            break;
+    }
+
+
+    //添加色彩显示
+    wrp.append("<span class='rate_badge' style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
+
+    var q_n = info.q_n
+    var a_n = info.a_n
 
     usr.get(0).style.fontWeight = "bold"
     usr.get(0).style.color = "black"
     usr.get(0).style.fontSize = "25"
     wrp.append($("<span>" + " Q:" + q_n + " A:" + a_n + "</span>"))
 
-    
-    
+
     //如果没有划过feture answer则画一次
     if (ele.featrued_painted != true && typeof result_buffer[usr.text()].featured_answers != "undefined") {
         do_featrued_painting(ele)
@@ -296,14 +306,13 @@ function do_painting(ele, txt) {
     if (is_auto_blocked && auto_block)
         block_user(usr.text())
 
-
     //添加屏蔽选项
     var a = $("<a title='block this user'>❌</a>")
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
         block_user(usr.text())
-        do_painting(ele, txt)
+        do_painting(ele)
     })
     wrp.append(a)
 
@@ -314,7 +323,7 @@ function do_featrued_painting(ele) {
     ele.featrued_painted = true
     var usr = $(ele).find(".username")
     var wrp = $(ele).find(".username_wrapper")
-  
+
 
     var a = result_buffer[usr.text()].answers
     var f = result_buffer[usr.text()].featured_answers
@@ -322,8 +331,7 @@ function do_featrued_painting(ele) {
     wrp.append("<span class='rate_badage'> rate:" + rate + "</span>")
     if (rate == 0) {
         $(ele).find(".rate_badge").css("background-color", "red")
-        if(auto_block)
-        {
+        if (auto_block) {
             block_user(usr.text())
             check_block(ele)
         }
