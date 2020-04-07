@@ -26,6 +26,7 @@ function SetBinding(key,check){
 SetBinding("extension_enabled",$("#switch").get(0))
 SetBinding("auto_block",$("#auto").get(0))
 SetBinding("need_featured_answer",$("#featured").get(0))
+SetBinding("cache_new_users",$("#cache_new_users").get(0))
 
 $("#featured").click(function(e){
 
@@ -44,9 +45,28 @@ $("#featured").click(function(e){
 $("#cached").click(function(){
    clear_cache()
 })
+//清空缓存的用户数据
+$("#update").click(function(){
+   update_cache()
+})
+
 function clear_cache(){
     chrome.storage.local.set({"result_buffer":{}},function(){
         console.log("cache cleared!")
+    })
+}
+
+function update_cache(){
+    chrome.storage.local.get(["result_buffer"], function (rslt) {
+        var result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
+
+        for (const usr in result_buffer) {
+            if (result_buffer.hasOwnProperty(usr)) {
+                const buffer = result_buffer[usr];
+                var url=buffer.profile_url
+
+            }
+        }
     })
 }
 var blocking_user = false

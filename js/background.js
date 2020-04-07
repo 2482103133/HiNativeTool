@@ -23,6 +23,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   add_script_value("extension_enabled",true)
   add_script_value("auto_block",false)
   add_script_value("need_featured_answer",false)
+  add_script_value("cache_new_users",false)
 
 });
 

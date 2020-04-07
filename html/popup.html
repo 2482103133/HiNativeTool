@@ -1,46 +1,62 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset="UTF-8"> 
+  <meta charset="UTF-8">
 </head>
+
 <body style="width: 300px;height: 500px;">
 
   <table style="text-align: right;">
-      <thead><tr>Options</tr></thead>
-      <tbody>
-          <tr>
-          <td>Turn on:</td>
-          <td><input id="switch" type="checkbox"  /><br/></td>
-        </tr>
-          <tr>
-          <td>Auto block:</td>
-          <td><input id="auto" type="checkbox" /><br/></td>
-        </tr>
-          <tr>
-          <td>Featured answer:</td>
-          <td><input id="featured" type="checkbox"  /><br/></td>
-        </tr>
-          <tr>
-          <td> Clear cached data:</td>
-          <td><input id="cached" type="button" value="🚮"title="Clear buffered responses" style="border-style: outset;padding: 0%;"></input><br/></td>
-        </tr>
-      </tbody>
+    <thead>
+      <tr>Options</tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Turn on:</td>
+        <td><input id="switch" type="checkbox" /><br /></td>
+      </tr>
+      <tr>
+        <td>Auto block:</td>
+        <td><input id="auto" type="checkbox" /><br /></td>
+      </tr>
+      <tr>
+        <td>Featured answer:</td>
+        <td><input id="featured" type="checkbox" /><br /></td>
+      </tr>
+      <tr>
+        <td>Cache new users:</td>
+        <td><input id="cache_new_users" type="checkbox" /><br /></td>
+      </tr>
+      <tr>
+        <td> Clear cached data:</td>
+        <td><input id="cached" type="button" value="🚮" title="Clear buffered responses"
+            style="border-style: outset;padding: 0%;"></input><br /></td>
+      </tr>
+      <tr>
+        <td> Update Chached Data:</td>
+        <td><input id="update" type="button" value="🆕" title="Update Chached Data"
+            style="border-style: outset;padding: 0%;"></input><br /></td>
+      </tr>
+    </tbody>
   </table>
-  <table >
-    <thead><tr>Blocked Users</tr></thead>
-    <tbody id="blocked_users" style="display: block;height: 400px;overflow: scroll;" >
-        <tr>
-          <td>bubusan</td>
-          <td><a href="baidu.com">unblock</a></td>
-        </tr>
-        <tr>
-          <td>bubusan</td>
-          <td><a>unblock</a></td>
-        </tr>
-        <tr>
-          <td>bubusan</td>
-          <td><a>unblock</a></td>
-        </tr>
+  <table>
+    <thead>
+      <tr>Blocked Users</tr>
+    </thead>
+    <tbody id="blocked_users" style="display: block;height: 400px;overflow: scroll;">
+      <tr>
+        <td>bubusan</td>
+        <td><a href="baidu.com">unblock</a></td>
+      </tr>
+      <tr>
+        <td>bubusan</td>
+        <td><a>unblock</a></td>
+      </tr>
+      <tr>
+        <td>bubusan</td>
+        <td><a>unblock</a></td>
+      </tr>
     </tbody>
   </table>
 
@@ -48,4 +64,5 @@
   <script src="/js/common.js"></script>
   <script src="/js/popup.js"></script>
 </body>
+
 </html>
