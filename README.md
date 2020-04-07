@@ -16,7 +16,15 @@
 
 ### 下载于使用  
 > *由于缺那5个$，所以暂时只能以离线的方式呈现.*
+#### 方案一
 1. 将项目文件以压缩包形式下载，解压到某个文件夹  
 2. 然后在chrome extension页面选择load unpacked  
 3. 选择刚刚解压的文件夹  
-4. 进入[HiNative](https://hinative.com),就可以看到右上角点亮的此HiNative插件  
+4. 进入[HiNative](https://hinative.com),就可以看到右上角点亮的此HiNative插件 
+
+#### 方案二
+1. 下载项目根目录下的crx文件到本地
+2. 打开页面<chrome://extensions/>
+3. 将crx文件拖动进该页面，确认即可
+
+ 

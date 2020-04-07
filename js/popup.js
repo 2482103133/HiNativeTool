@@ -30,6 +30,7 @@ SetBinding("auto_block", $("#auto").get(0))
 SetBinding("need_featured_answer", $("#featured").get(0))
 SetBinding("cache_new_users", $("#cache_new_users").get(0))
 SetBinding("block_rate_below", $("#block_rate_below").get(0))
+SetBinding("show_log", $("#show_log").get(0))
 
 blocking_user = false
 blocked_users = []

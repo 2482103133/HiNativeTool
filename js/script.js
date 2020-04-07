@@ -2,10 +2,27 @@ $(document).ready(function () {
     // https://hinative.com/en-US 只监听qeustions路径
     if (!window.location.pathname.match(/^\/[^\/]*$/))
         return
-
+    //缓存的结果，减少xhr次数
+    result_buffer = {}
+    //用来填充的个数
+    last_blocks_count = 0
+    //现在是否正在blocking过程中
+    blocking = false
+    //数据是否加载完
+    data_loaded = false
+    //被屏蔽的用户列表
+    blocked_users = []
+    //新用户最大提问数
+    new_user_qustion_count = 3
+    //自动屏蔽的用户数组
+    auto_blocked_users = []
+    //已经被屏蔽的问题块
+    blocked_blocks = new Set()
+    //已经用于填充的问题块数
+    filling_blocks_count = 0
+    
     //监听blocks变化
     setInterval(() => {
-        // console.log("extension_enabled:" + extension_enabled)
         if (extension_enabled && data_loaded)
             handler()
     }, 200);
@@ -13,20 +30,7 @@ $(document).ready(function () {
     $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
 })
 
-//缓存的结果，减少xhr次数
-result_buffer = {}
-//用来填充的个数
-last_blocks_count = 0
-//现在是否正在blocking过程中
-blocking = false
-//数据是否加载完
-data_loaded = false
-//被屏蔽的用户列表
-blocked_users = []
-//新用户最大提问数
-new_user_qustion_count = 3
-//自动屏蔽的用户数组
-auto_blocked_users = []
+
 
 //主要的执行过程
 function handler() {
@@ -35,12 +39,11 @@ function handler() {
         return
     }
     if (blocking) {
-        console.log("blokcing")
+        log("blokcing")
         return
     }
     //阻塞标示，以免两个interval同时运行，造成多次paint
     blocking = true
-
     last_blocks_count = $(".d_block").length
 
     try {
@@ -52,7 +55,7 @@ function handler() {
 
             //如果是屏蔽用户则不用画
             if (!check_block(b_block)) {
-                //console.log("return:" + usr)
+                //log("return:" + usr)
                 return
             }
 
@@ -64,29 +67,26 @@ function handler() {
             //如果该用户已经加载过了就不用了
             if (typeof result_buffer[usr] === "undefined") {
                 //没有加载过就继续
-                console.log("usr not in buffer:" + usr)
-
+                log("usr not in buffer:" + usr)
             }
-
             else {
                 //已经加载过了
                 //如果是新的方块则重新画一遍
                 do_painting(b_block, result_buffer[usr].txt)
                 return
             }
-
             //发送请求
             let oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
-              
+
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
                 let wrp = $(page.find(".chat_content_wrapper").get(0))
-                  //获得用户profileurl
+                //获得用户profileurl
                 let p_url = wrp.find("a").get(0).href
                 let usr1 = usr
-          
+
                 get_user_info(p_url, usr1).then(function (buffer) {
                     let b_block1 = b_block
                     let buffer1 = buffer
@@ -104,9 +104,9 @@ function handler() {
 
                     if (need_featured_answer == true) {
                         get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
-                            
-                            console.log("featrued loaded:")
-                            console.log(buffer)
+
+                            log("featrued loaded:" + buffer.usr)
+
                             result_buffer[buffer.usr] = buffer
                             //将所有同名的block都加上rate
                             $(".d_block").each(function () {
@@ -135,22 +135,6 @@ function handler() {
     }
 }
 
-
-
-//清楚缓存
-// chrome.storage.local.set({ blocked_users: [] })
-// chrome.storage.local.set({ result_buffer: {} })
-chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
-    blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
-    result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
-
-    console.log("read result_buffer count:" + Object.keys(result_buffer).length)
-    console.log(result_buffer)
-    console.log("blocked_users:")
-    console.log(blocked_users)
-    data_loaded = true
-})
-
 function update_result_buffer() {
     let clone = result_buffer
     //如果选择不缓冲新人，则不将新人数据上传
@@ -165,8 +149,8 @@ function update_result_buffer() {
             }
         }
         for (const usr of not_recording) {
-            console.log("not caching new usr:" + usr)
-            // console.log(clone[usr])
+            // log("not caching new usr:" + usr)
+            // log(clone[usr])
             delete clone[usr]
         }
     }
@@ -181,20 +165,18 @@ function block_user(user_name, auto_blocked = true) {
     blocked_users.push(user_name)
     blocked_users = Array.from(new Set(blocked_users))
     let clone = Array.from(blocked_users)
-    console.log("clone before filtered:"+clone)
+
     //自动生成的block将不被储存到本地
     for (const usr of auto_blocked_users) {
-        console.log("remove:"+usr)
-        if(clone.indexOf(usr)>-1)
-        clone.splice(clone.indexOf(usr), 1)
+
+        if (clone.indexOf(usr) > -1)
+            clone.splice(clone.indexOf(usr), 1)
     }
-    console.log("clone:"+clone)
-    console.log("auto_blocked_users:"+auto_blocked_users)
+
     chrome.storage.local.set({ "blocked_users": clone })
 }
 
-let blocked_blocks = new Set()
-let filling_blocks_count = 0
+
 
 function get_paint_info(txt) {
 
@@ -210,7 +192,7 @@ function get_paint_info(txt) {
 
     //获得questions number
     let numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
-    // console.log(txt)
+    // log(txt)
     info.q_n = numbers[0]
     info.a_n = numbers[1]
 
@@ -278,7 +260,7 @@ function do_painting(ele) {
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
-        block_user(usr.text(),false)
+        block_user(usr.text(), false)
         do_painting(ele)
     })
     wrp.append(a)
@@ -291,8 +273,8 @@ function do_featrued_painting(ele) {
     ele.featrued_painted = true
     let usr = $(ele).find(".username")
     let wrp = $(ele).find(".username_wrapper")
-    console.log("result_buffer[" + usr.text() + "]:")
-    console.log(result_buffer[usr.text()])
+    // log("result_buffer[" + usr.text() + "]:")
+    // log(result_buffer[usr.text()])
     let a = result_buffer[usr.text()].answers
     let f = result_buffer[usr.text()].featured_answers
 
@@ -317,7 +299,7 @@ function do_featrued_painting(ele) {
 
 }
 //判断是否块块是否需要重绘
-function check_block(ele) {
+function check_block(ele, why) {
     //如果已经屏蔽，则不用画了
     if (blocked_blocks.has(ele))
         return false
@@ -334,7 +316,7 @@ function check_block(ele) {
             $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
         }
 
-        console.log("已隐藏用户问题:" + usr.text())
+        log("已隐藏用户问题:" + usr.text())
 
         //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
         if (filling_blocks_count < 5) {
@@ -372,7 +354,7 @@ function get_user_info(p_url, usr) {
 // 获得用户采纳情况信息
 function get_user_feartured_answer(p_url, buffer) {
     let buffer1 = buffer
-    let p_url1=p_url
+    let p_url1 = p_url
     return new Promise(resolve => {
         let buffer = buffer1
         //第一回答页面
@@ -394,10 +376,10 @@ function get_user_feartured_answer(p_url, buffer) {
             buffer.answers = 0
             blocks.each(function () {
                 let badge = $($(this).find(".badge").get(0)).text().trim()
-                //console.log("usr:" + usr + " badge:" + badge)
+                //log("usr:" + usr + " badge:" + badge)
                 //如果无人回答则不计入
                 if (badge == "0") {
-                    //console.log("skipped quesition")
+                    //log("skipped quesition")
                     return
                 }
 
@@ -424,7 +406,7 @@ function get_user_feartured_answer(p_url, buffer) {
 
                     //当所有的问题都加载完，统计结果，并添加到缓存中
                     if (blocks_count == buffer.answers) {
-                        console.log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                        log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
                         resolve(buffer)
                         return
                     }
@@ -450,22 +432,22 @@ function to_jq(html_text) {
 
 //更新缓存
 function update_cache() {
-    console.log("current result_buffer:")
-    console.log(result_buffer)
+    log("current result_buffer:")
+    log(result_buffer)
     new Promise(resolve => {
         chrome.storage.local.get(["result_buffer"], function (rslt) {
             const result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
             let resolved = 0
             const count = Object.keys(result_buffer).length
-            console.log("count:"+count)
-            console.log("result_buffer:")
-            console.log(result_buffer)
+            log("count:" + count)
+            log("result_buffer:")
+            log(result_buffer)
 
             for (const usr in result_buffer) {
 
-               
+
                 let p_url = result_buffer[usr].profile_url
-                let usr1=usr
+                let usr1 = usr
                 get_user_info(p_url, usr1).then(function (buffer1) {
 
                     let buffer2 = buffer1
@@ -475,19 +457,19 @@ function update_cache() {
                     if (need_featured_answer == true) {
                         get_user_feartured_answer(p_url, buffer2).then(function (buffer3) {
                             // let buffer = buffer
-                            console.log("featrued loaded:")
-                            console.log(buffer3)
+                            log("featrued loaded:")
+                            log(buffer3)
                             result_buffer[buffer3.usr] = buffer3
-                            
+
                             if (++resolved == count)
                                 resolve(result_buffer)
-                                console.log("resolved:"+resolved)
+                            log("resolved:" + resolved)
                         })
                     } else {
                         result_buffer[buffer1.usr] = buffer1
                         if (++resolved == count)
                             resolve(result_buffer)
-                            console.log("resolved:"+resolved)
+                        log("resolved:" + resolved)
                     }
                 })
 
@@ -495,13 +477,18 @@ function update_cache() {
         })
 
     }).then(rb => {
-        console.log("resovled buffer:")
-        console.log(rb)
-        // result_buffer = rb
-        // update_result_buffer()
+        log("resovled buffer:")
+        log(rb)
+
         alert("用户信息更新完成！")
     })
 }
+
+function log(obj) {
+    if (show_log)
+        console.log(obj)
+}
+
 
 
 
