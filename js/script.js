@@ -14,19 +14,19 @@ $(document).ready(function () {
 })
 
 //缓存的结果，减少xhr次数
-let result_buffer = {}
+result_buffer = {}
 //用来填充的个数
-let last_blocks_count = 0
+last_blocks_count = 0
 //现在是否正在blocking过程中
-let blocking = false
+blocking = false
 //数据是否加载完
-let data_loaded = false
+data_loaded = false
 //被屏蔽的用户列表
-let blocked_users = []
+blocked_users = []
 //新用户最大提问数
-let new_user_qustion_count = 3
+new_user_qustion_count = 3
 //自动屏蔽的用户数组
-let auto_blocked_users = []
+auto_blocked_users = []
 
 //主要的执行过程
 function handler() {
@@ -146,6 +146,8 @@ chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
 
     console.log("read result_buffer count:" + Object.keys(result_buffer).length)
     console.log(result_buffer)
+    console.log("blocked_users:")
+    console.log(blocked_users)
     data_loaded = true
 })
 
@@ -178,11 +180,16 @@ function block_user(user_name, auto_blocked = true) {
 
     blocked_users.push(user_name)
     blocked_users = Array.from(new Set(blocked_users))
-    let clone = Array.from(new Set(blocked_users))
+    let clone = Array.from(blocked_users)
+    console.log("clone before filtered:"+clone)
     //自动生成的block将不被储存到本地
     for (const usr of auto_blocked_users) {
+        console.log("remove:"+usr)
+        if(clone.indexOf(usr)>-1)
         clone.splice(clone.indexOf(usr), 1)
     }
+    console.log("clone:"+clone)
+    console.log("auto_blocked_users:"+auto_blocked_users)
     chrome.storage.local.set({ "blocked_users": clone })
 }
 
@@ -271,7 +278,7 @@ function do_painting(ele) {
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
-        block_user(usr.text())
+        block_user(usr.text(),false)
         do_painting(ele)
     })
     wrp.append(a)

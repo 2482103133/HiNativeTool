@@ -2,7 +2,7 @@
 $("#cached").click(function () {
     clear_cache()
 })
-//清空缓存的用户数据
+//更新缓存的用户数据
 $("#update").click(function () {
     update_cache()
 })
@@ -30,6 +30,15 @@ SetBinding("auto_block", $("#auto").get(0))
 SetBinding("need_featured_answer", $("#featured").get(0))
 SetBinding("cache_new_users", $("#cache_new_users").get(0))
 SetBinding("block_rate_below", $("#block_rate_below").get(0))
+
+blocking_user = false
+blocked_users = []
+chrome.storage.local.get(["blocked_users"], function (rslt) {
+    blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
+
+    show_blocked_users()
+    console.log(blocked_users)
+})
 
 function SetBinding(key1, check1) {
     let key = key1
@@ -86,19 +95,14 @@ function update_cache() {
         code: "update_cache()"
     }, () => chrome.runtime.lastError);
 }
-let blocking_user = false
-let blocked_users = []
-chrome.storage.local.get(["blocked_users"], function (rslt) {
-    blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
 
-    show_blocked_users()
-})
 
 function remove_block(username) {
     while (blocked_users.indexOf(username) > -1) {
         blocked_users.splice(blocked_users.indexOf(username), 1)
     }
     chrome.storage.local.set({ blocked_users: blocked_users })
+    
     // show_blocked_users()
 }
 
