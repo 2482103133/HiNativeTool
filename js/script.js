@@ -5,7 +5,8 @@ $(document).ready(function () {
 
     //监听blocks变化
     setInterval(() => {
-        if (extension_enabled || data_loaded)
+        // console.log("extension_enabled:" + extension_enabled)
+        if (extension_enabled && data_loaded)
             handler()
     }, 200);
 
@@ -13,19 +14,19 @@ $(document).ready(function () {
 })
 
 //缓存的结果，减少xhr次数
-var result_buffer = {}
+let result_buffer = {}
 //用来填充的个数
-var last_blocks_count = 0
+let last_blocks_count = 0
 //现在是否正在blocking过程中
-var blocking = false
+let blocking = false
 //数据是否加载完
-var data_loaded = false
+let data_loaded = false
 //被屏蔽的用户列表
-var blocked_users = []
+let blocked_users = []
 //新用户最大提问数
-var new_user_qustion_count=3
+let new_user_qustion_count = 3
 //自动屏蔽的用户数组
-var auto_blocked_users=[]
+let auto_blocked_users = []
 
 //主要的执行过程
 function handler() {
@@ -45,9 +46,9 @@ function handler() {
     try {
         //遍历每个回答
         $(".d_block").each(function () {
-            var href = $(this).attr("href")
-            var b_block = $(this).get(0)
-            var usr = $(this).find(".username").text()
+            let href = $(this).attr("href")
+            let b_block = $(this).get(0)
+            let usr = $(this).find(".username").text()
 
             //如果是屏蔽用户则不用画
             if (!check_block(b_block)) {
@@ -75,134 +76,54 @@ function handler() {
             }
 
             //发送请求
-            var oReq = new XMLHttpRequest();
+            let oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
-                var evt = evt;
+              
                 //得到用户页面
-                var txt = evt.srcElement.response
-                var matches = txt.match(/\/.*\/profiles\/\d+/g)
-                if (matches.length > 0) {
-                    var i = 1
-                    var p_url = null
-                    //获得用户profileurl
-                    do {
-                        if (i >= matches.length) {
-                            //未能找到matches,暂时认为是自己本人
-                            console.log("can't find another user profile link!")
-                            break
-                        }
-                        var p_url = matches[i]
-
-                        i++
-                    }
-                    //判断不是自己的主页
-                    while (p_url == matches[0])
-
-                    var req = new XMLHttpRequest();
-                    req.addEventListener("load", function (evt1) {
-                        var p_url1 = p_url
-                        var txt = evt1.srcElement.response
-
-                        if (b_block.painted == true) {
-                            return
-                        }
-
-                        //保存了基本信息和用户地址
-                        result_buffer[usr] = { info: get_paint_info(txt),profile_url:p_url }
-
-                        if (!need_featured_answer)
-                            update_result_buffer()
-
-                        do_painting(b_block)
-
-                        if (need_featured_answer == true) {
-                            //第一回答页面
-                            //在这里获得采纳的回答数
-                            var q_url = p_url1 + "/questions"
-                            var req = new XMLHttpRequest();
-
-
-                            //请求该用户的提问页，用于得到问题的采纳率
-                            req.addEventListener("load", function (evt) {
-                                var b_block1 = b_block
-                                var qtxt = evt.srcElement.response
-                                var html = $.parseHTML(qtxt)
-                                var page = $("<div>").append(html)
+                let txt = evt.srcElement.response
+                let page = to_jq(txt)
+                let wrp = $(page.find(".chat_content_wrapper").get(0))
+                  //获得用户profileurl
+                let p_url = wrp.find("a").get(0).href
+                let usr1 = usr
           
-                                //获得第一页回答的问题
-                                var blocks = page.find(".d_block")
-                                var blocks_count = 0
+                get_user_info(p_url, usr1).then(function (buffer) {
+                    let b_block1 = b_block
+                    let buffer1 = buffer
 
-                                //初始化总的有回复的提问数
-                                result_buffer[usr].answers = 0
-                                blocks.each(function () {
+                    if (b_block1.painted == true) {
+                        return
+                    }
+                    //保存了基本信息和用户地址
+                    result_buffer[buffer.usr] = buffer1
 
-                                    var badge = $($(this).find(".badge").get(0)).text().trim()
-                                    //console.log("usr:" + usr + " badge:" + badge)
-                                    //如果无人回答则不计入
-                                    if (badge == "0") {
-                                        //console.log("skipped quesition")
-                                        return
+                    if (!need_featured_answer)
+                        update_result_buffer()
+
+                    do_painting(b_block1)
+
+                    if (need_featured_answer == true) {
+                        get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
+                            
+                            console.log("featrued loaded:")
+                            console.log(buffer)
+                            result_buffer[buffer.usr] = buffer
+                            //将所有同名的block都加上rate
+                            $(".d_block").each(function () {
+                                if (this.featrued_painted != true) {
+                                    let a_usr = $(this).find(".username")
+                                    if (a_usr.text() == buffer.usr) {
+                                        do_featrued_painting(this)
                                     }
-
-                                    blocks_count++;
-                                    var fq_url = this.href
-                                    var req = new XMLHttpRequest();
-
-                                    //请求某一个问题的页面
-                                    req.addEventListener("load", function (evt) {
-                                        var b_block2 = b_block1
-                                
-                                        var usr1 = usr
-                                        var buffer = result_buffer[usr1]
-                             
-                                        var qtxt1 = evt.srcElement.response
-                                        if (typeof buffer.featured_answers === "undefined") {
-                                            buffer.featured_answers = 0
-                                        }
-                                        //该问题已被采纳
-                                        if (qtxt1.indexOf("featured_answer_label") > -1) {
-                                            buffer.featured_answers++
-                                        }
-                                        else {
-                                            //未被采纳
-                                        }
-
-                                        buffer.answers++
-
-                                        //当所有的问题都加载完，统计结果，并添加到缓存中
-                                        if (blocks_count == buffer.answers) {
-                                            console.log("usr:" + usr1 + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-
-                                            //将所有同名的block都加上rate
-                                            $(".d_block").each(function () {
-                                                if (this.featrued_painted != true) {
-                                                    var a_usr = $(this).find(".username")
-                                                    if (a_usr.text() == usr1) {
-                                                        do_featrued_painting(this)
-                                                    }
-                                                }
-                                            })
-
-                                            //更新数据到本地
-                                            update_result_buffer()
-                                        }
-                                    })
-
-                                    req.open("GET", fq_url);
-                                    req.send();
-
-                                })
+                                }
                             })
 
-                            req.open("GET", q_url);
-                            req.send();
-                        }
-                    })
+                            //更新数据到本地
+                            update_result_buffer()
+                        })
+                    }
+                })
 
-                    req.open("GET", p_url);
-                    req.send()
-                }
             });
 
             oReq.open("GET", href);
@@ -229,61 +150,59 @@ chrome.storage.local.get(["blocked_users", "result_buffer"], function (rslt) {
 })
 
 function update_result_buffer() {
-    var clone=result_buffer
+    let clone = result_buffer
     //如果选择不缓冲新人，则不将新人数据上传
-    if(!cache_new_users)
-    {
-    clone=Object.assign({},result_buffer)
-    var not_recording=[]
-    for (const usr in clone) {
-        
-        if(result_buffer[usr].info.q_n.replace("K","000").replace(".","")<=new_user_qustion_count)
-        {
-            //如果是新人则不缓存数据
-            not_recording.push(usr)
+    if (!cache_new_users) {
+        clone = Object.assign({}, result_buffer)
+        let not_recording = []
+        for (const usr in clone) {
+
+            if (result_buffer[usr].info.q_n.replace("K", "000").replace(".", "") <= new_user_qustion_count) {
+                //如果是新人则不缓存数据
+                not_recording.push(usr)
+            }
         }
-    }
-    for (const usr of not_recording) {
-        console.log("not caching new usr:"+usr)
-        console.log(clone[usr])
-        delete clone[usr]
-    }
+        for (const usr of not_recording) {
+            console.log("not caching new usr:" + usr)
+            // console.log(clone[usr])
+            delete clone[usr]
+        }
     }
 
     chrome.storage.local.set({ "result_buffer": clone })
 }
 
-function block_user(user_name,auto_blocked=true) {
-    if(auto_blocked)
-    auto_blocked_users.push(user_name)
+function block_user(user_name, auto_blocked = true) {
+    if (auto_blocked)
+        auto_blocked_users.push(user_name)
 
     blocked_users.push(user_name)
     blocked_users = Array.from(new Set(blocked_users))
-    var clone=Array.from(new Set(blocked_users))
+    let clone = Array.from(new Set(blocked_users))
     //自动生成的block将不被储存到本地
     for (const usr of auto_blocked_users) {
-        clone.splice(clone.indexOf(usr),1)
+        clone.splice(clone.indexOf(usr), 1)
     }
     chrome.storage.local.set({ "blocked_users": clone })
 }
 
-var blocked_blocks = new Set()
-var filling_blocks_count = 0
+let blocked_blocks = new Set()
+let filling_blocks_count = 0
 
 function get_paint_info(txt) {
 
     //获得反应率以及其他信息
-    var matches = txt.match(/level_\d/)
-    var info = {}
+    let matches = txt.match(/level_\d/)
+    let info = {}
 
-    var color = "white"
+    let color = "white"
     if (matches != null) {
         //获得用户profile rate
         info.rate = matches[0]
     }
 
     //获得questions number
-    var numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
+    let numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
     // console.log(txt)
     info.q_n = numbers[0]
     info.a_n = numbers[1]
@@ -295,18 +214,18 @@ function do_painting(ele) {
 
     //设置一个painted属性
     ele.painted = true
-    var usr = $(ele).find(".username")
-    var wrp = $(ele).find(".username_wrapper")
-    var buffer = result_buffer[usr.text()]
-    var info = buffer.info
+    let usr = $(ele).find(".username")
+    let wrp = $(ele).find(".username_wrapper")
+    let buffer = result_buffer[usr.text()]
+    let info = buffer.info
 
     //确认是否需要自动隐藏
-    var is_auto_blocked = false
+    let is_auto_blocked = false
 
-    var color = "white"
+    let color = "white"
 
     //获得用户profile rate
-    var rate = info.rate
+    let rate = info.rate
 
     switch (rate) {
         case "level_1":
@@ -329,8 +248,8 @@ function do_painting(ele) {
     //添加色彩显示
     wrp.append("<span class='rate_badge' style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
 
-    var q_n = info.q_n
-    var a_n = info.a_n
+    let q_n = info.q_n
+    let a_n = info.a_n
 
     usr.get(0).style.fontWeight = "bold"
     usr.get(0).style.color = "black"
@@ -348,7 +267,7 @@ function do_painting(ele) {
         block_user(usr.text())
 
     //添加屏蔽选项
-    var a = $("<a title='block this user'>❌</a>")
+    let a = $("<a title='block this user'>❌</a>")
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
@@ -363,16 +282,16 @@ function do_painting(ele) {
 //添加采纳率
 function do_featrued_painting(ele) {
     ele.featrued_painted = true
-    var usr = $(ele).find(".username")
-    var wrp = $(ele).find(".username_wrapper")
+    let usr = $(ele).find(".username")
+    let wrp = $(ele).find(".username_wrapper")
+    console.log("result_buffer[" + usr.text() + "]:")
+    console.log(result_buffer[usr.text()])
+    let a = result_buffer[usr.text()].answers
+    let f = result_buffer[usr.text()].featured_answers
 
-
-    var a = result_buffer[usr.text()].answers
-    var f = result_buffer[usr.text()].featured_answers
-    
-    var rate = (f / a).toFixed(2)
-    wrp.append("<span class='rate_badage'> rate:" + ((a!=0)?rate:"NO ANSWERS") + "</span>")
-    if (rate == 0) {
+    let rate = (f / a).toFixed(2)
+    wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "NO ANSWERS") + "</span>")
+    if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
         $(ele).find(".rate_badge").css("background-color", "red")
         if (auto_block) {
@@ -396,7 +315,7 @@ function check_block(ele) {
     if (blocked_blocks.has(ele))
         return false
 
-    var usr = $(ele).find(".username")
+    let usr = $(ele).find(".username")
 
     if (blocked_users.indexOf(usr.text()) > -1) {
         //如果用户被屏蔽，则隐藏这个提问
@@ -425,14 +344,16 @@ function check_block(ele) {
     return true
 }
 
-function get_user_info(p_url,usr){
-    return new Promise(resolve=>{
-        var req = new XMLHttpRequest();
+//获得用户提问，回应率，回答数
+function get_user_info(p_url, usr) {
+    let p_url1 = p_url
+    let usr1 = usr
+    return new Promise(resolve => {
+        let req = new XMLHttpRequest();
         req.addEventListener("load", function (evt1) {
-            var p_url1 = p_url
-            var txt = evt1.srcElement.response
+            let txt = evt1.srcElement.response
 
-            var buffer={ info: get_paint_info(txt),profile_url:p_url,usr:usr }
+            let buffer = { info: get_paint_info(txt), profile_url: p_url1, usr: usr1 }
             resolve(buffer)
             return
         })
@@ -441,89 +362,137 @@ function get_user_info(p_url,usr){
     })
 }
 
-function get_user_feartured_answer(p_url,buffer){
-    var buffer=buffer
-     //第一回答页面
-     //在这里获得采纳的回答数
-     var q_url = p_url1 + "/questions"
-     var req = new XMLHttpRequest();
+// 获得用户采纳情况信息
+function get_user_feartured_answer(p_url, buffer) {
+    let buffer1 = buffer
+    let p_url1=p_url
+    return new Promise(resolve => {
+        let buffer = buffer1
+        //第一回答页面
+        //在这里获得采纳的回答数
+        let q_url = p_url1 + "/questions"
+        let req = new XMLHttpRequest();
 
-     //请求该用户的提问页，用于得到问题的采纳率
-     req.addEventListener("load", function (evt) {
+        //请求该用户的提问页，用于得到问题的采纳率
+        req.addEventListener("load", function (evt) {
 
-         var qtxt = evt.srcElement.response
-         var html = $.parseHTML(qtxt)
-         var page = $("<div>").append(html)
+            let qtxt = evt.srcElement.response
+            let page = to_jq(qtxt)
 
-         //获得第一页回答的问题
-         var blocks = page.find(".d_block")
-         var blocks_count = 0
+            //获得第一页回答的问题
+            let blocks = page.find(".d_block")
+            let blocks_count = 0
 
-         //初始化总的有回复的提问数
-         buffer.answers = 0
-         blocks.each(function () {
-             var badge = $($(this).find(".badge").get(0)).text().trim()
-             //console.log("usr:" + usr + " badge:" + badge)
-             //如果无人回答则不计入
-             if (badge == "0") {
-                 //console.log("skipped quesition")
-                 return
-             }
-
-             blocks_count++;
-             var fq_url = this.href
-             var req = new XMLHttpRequest();
-
-             //请求某一个问题的页面
-             req.addEventListener("load", function (evt) {
-
-                 var usr1 = usr
-                 var buffer = result_buffer[usr1]
-      
-                 var qtxt1 = evt.srcElement.response
-                 if (typeof buffer.featured_answers === "undefined") {
-                     buffer.featured_answers = 0
-                 }
-                 //该问题已被采纳
-                 if (qtxt1.indexOf("featured_answer_label") > -1) {
-                     buffer.featured_answers++
-                 }
-                 else {
-                     //未被采纳
-                 }
-
-                 buffer.answers++
-
-                 //当所有的问题都加载完，统计结果，并添加到缓存中
-                 if (blocks_count == buffer.answers) {
-                    console.log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-                    resolve(buffer)
+            //初始化总的有回复的提问数
+            buffer.answers = 0
+            blocks.each(function () {
+                let badge = $($(this).find(".badge").get(0)).text().trim()
+                //console.log("usr:" + usr + " badge:" + badge)
+                //如果无人回答则不计入
+                if (badge == "0") {
+                    //console.log("skipped quesition")
                     return
-                 }
-             })
-             
-             req.open("GET", fq_url);
-             req.send();
+                }
 
-         })
-     })
+                blocks_count++;
+                let fq_url = this.href
+                let req = new XMLHttpRequest();
 
-     req.open("GET", q_url);
-     req.send();
- }
+                //请求某一个问题的页面
+                req.addEventListener("load", function (evt) {
+                    // let buffer = result_buffer[usr1]
+                    let qtxt1 = evt.srcElement.response
+                    if (typeof buffer.featured_answers === "undefined") {
+                        buffer.featured_answers = 0
+                    }
+                    //该问题已被采纳
+                    if (qtxt1.indexOf("featured_answer_label") > -1) {
+                        buffer.featured_answers++
+                    }
+                    else {
+                        //未被采纳
+                    }
 
+                    buffer.answers++
 
-function update_cache(){
-    chrome.storage.local.get(["result_buffer"], function (rslt) {
-        var result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
+                    //当所有的问题都加载完，统计结果，并添加到缓存中
+                    if (blocks_count == buffer.answers) {
+                        console.log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                        resolve(buffer)
+                        return
+                    }
+                })
 
-        for (const usr in result_buffer) {
-            if (result_buffer.hasOwnProperty(usr)) {
-                const buffer = result_buffer[usr];
-                var url=buffer.profile_url
+                req.open("GET", fq_url);
+                req.send();
+
+            })
+        })
+
+        req.open("GET", q_url);
+        req.send();
+    })
+
+}
+function to_jq(html_text) {
+    let qtxt = html_text
+    let html = $.parseHTML(qtxt)
+    let page = $("<div>").append(html)
+    return page
+}
+
+//更新缓存
+function update_cache() {
+    console.log("current result_buffer:")
+    console.log(result_buffer)
+    new Promise(resolve => {
+        chrome.storage.local.get(["result_buffer"], function (rslt) {
+            const result_buffer = typeof rslt.result_buffer === "undefined" ? {} : rslt.result_buffer
+            let resolved = 0
+            const count = Object.keys(result_buffer).length
+            console.log("count:"+count)
+            console.log("result_buffer:")
+            console.log(result_buffer)
+
+            for (const usr in result_buffer) {
+
+               
+                let p_url = result_buffer[usr].profile_url
+                let usr1=usr
+                get_user_info(p_url, usr1).then(function (buffer1) {
+
+                    let buffer2 = buffer1
+                    //保存了基本信息和用户地址
+                    result_buffer[buffer2.usr] = buffer2
+
+                    if (need_featured_answer == true) {
+                        get_user_feartured_answer(p_url, buffer2).then(function (buffer3) {
+                            // let buffer = buffer
+                            console.log("featrued loaded:")
+                            console.log(buffer3)
+                            result_buffer[buffer3.usr] = buffer3
+                            
+                            if (++resolved == count)
+                                resolve(result_buffer)
+                                console.log("resolved:"+resolved)
+                        })
+                    } else {
+                        result_buffer[buffer1.usr] = buffer1
+                        if (++resolved == count)
+                            resolve(result_buffer)
+                            console.log("resolved:"+resolved)
+                    }
+                })
 
             }
-        }
+        })
+
+    }).then(rb => {
+        console.log("resovled buffer:")
+        console.log(rb)
+        // result_buffer = rb
+        // update_result_buffer()
+        alert("用户信息更新完成！")
     })
 }
 

@@ -14,28 +14,32 @@
     <tbody>
       <tr>
         <td>Turn on:</td>
-        <td><input id="switch" type="checkbox" /><br /></td>
+        <td><input id="switch" type="checkbox" title="Check to allow this extension to function" /><br /></td>
       </tr>
       <tr>
         <td>Auto block:</td>
-        <td><input id="auto" type="checkbox" /><br /></td>
+        <td><input id="auto" type="checkbox"  title="Allow this script to block users automatically"/><br /></td>
       </tr>
       <tr>
         <td>Featured answer:</td>
-        <td><input id="featured" type="checkbox" /><br /></td>
+        <td><input id="featured" type="checkbox"  title="Check to buffer and show user answer-featuring rate"/><br /></td>
       </tr>
       <tr>
         <td>Cache new users:</td>
-        <td><input id="cache_new_users" type="checkbox" /><br /></td>
+        <td><input id="cache_new_users" type="checkbox"  title="Check to cache new user's data,this option can be reverted." /><br /></td>
+      </tr>
+      <tr>
+        <td>Block rate range:</td>
+        <td><input id="block_rate_below" type="range"  title="Block rate below" min="0" max="1" step="0.1"/><br /></td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
-        <td><input id="cached" type="button" value="🚮" title="Clear buffered responses"
+        <td><input id="cached" type="button" value="🚮" title="Clear buffered responses,you might need to re-reqeust those data!"
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>
       <tr>
         <td> Update Chached Data:</td>
-        <td><input id="update" type="button" value="🆕" title="Update Chached Data"
+        <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>
     </tbody>

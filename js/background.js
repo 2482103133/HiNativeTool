@@ -24,19 +24,20 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   add_script_value("auto_block",false)
   add_script_value("need_featured_answer",false)
   add_script_value("cache_new_users",false)
+  add_script_value("block_rate_below",0.3)
 
 });
 
 
 
-function add_script_value(key,dflt){
-  var key=key
-  var dflt=dflt
+function add_script_value(key1,dflt1){
+  let key=key1
+  let dflt=dflt1
   chrome.storage.local.get([key], function (result) {
 
     if(typeof result[key] ==="undefined")
     {
-      var obj={}
+      let obj={}
       obj[key]=dflt
       chrome.storage.local.set(obj)
       result[key]=dflt

@@ -1,6 +1,6 @@
 function storage_get(key,value)
 {
-    var r=null
+    let r=null
     chrome.storage.local.get([key],function(result){
       r=result[key]  
     })
@@ -9,7 +9,7 @@ function storage_get(key,value)
 
 function storage_set(key,value)
 {
-    var obj={}
+    let obj={}
     obj[key]=value
     return chrome.storage.local.set(obj)
 }
