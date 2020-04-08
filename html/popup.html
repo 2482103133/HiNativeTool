@@ -6,7 +6,6 @@
 </head>
 
 <body style="width: 300px;height: 500px;">
-
   <table style="text-align: right;">
     <thead>
       <tr>Options</tr>
@@ -18,27 +17,30 @@
       </tr>
       <tr>
         <td>Auto block:</td>
-        <td><input id="auto" type="checkbox"  title="Allow this script to block users automatically"/><br /></td>
+        <td><input id="auto" type="checkbox" title="Allow this script to block users automatically" /><br /></td>
       </tr>
       <tr>
         <td>Featured answer:</td>
-        <td><input id="featured" type="checkbox"  title="Check to buffer and show user answer-featuring rate"/><br /></td>
+        <td><input id="featured" type="checkbox" title="Check to buffer and show user answer-featuring rate" /><br />
+        </td>
       </tr>
       <tr>
         <td>Cache new users:</td>
-        <td><input id="cache_new_users" type="checkbox"  title="Check to cache new user's data,this option can be reverted." /><br /></td>
+        <td><input id="cache_new_users" type="checkbox"
+            title="Check to cache new user's data,this option can be reverted." /><br /></td>
       </tr>
       <tr>
         <td>Show log:</td>
-        <td><input id="show_log" type="checkbox"  title="Show developer log" /><br /></td>
+        <td><input id="show_log" type="checkbox" title="Show developer log" /><br /></td>
       </tr>
       <tr>
         <td>Block rate:</td>
-        <td><input id="block_rate_below" type="range"  title="Block rate below" min="0" max="1" step="0.1"/><br /></td>
+        <td><input id="block_rate_below" type="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
-        <td><input id="cached" type="button" value="🚮" title="Clear buffered responses,you might need to re-reqeust those data!"
+        <td><input id="cached" type="button" value="🚮"
+            title="Clear buffered responses,you might need to re-reqeust those data!"
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>
       <tr>
@@ -46,27 +48,33 @@
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>
+      <tr >
+        <td style="text-align: left;border-style: double;">
+          <table >
+            <thead>
+              <tr>Blocked Users</tr>
+            </thead>
+            <tbody id="blocked_users" style="display: inline-block;height: 300px;overflow: scroll;">
+            </tbody>
+          </table>
+        </td>
+        <td style="text-align: left;border-style: double;">
+          <table>
+            <thead>
+              <tr>White List</tr>
+            </thead>
+            <tbody id="white_list" style="display: inline-block;height: 300px;overflow: scroll;">
+            </tbody>
+          </table>
+        </td>
+      </tr>
     </tbody>
   </table>
-  <table>
-    <thead>
-      <tr>Blocked Users</tr>
-    </thead>
-    <tbody id="blocked_users" style="display: block;height: 400px;overflow: scroll;">
-      <tr>
-        <td>bubusan</td>
-        <td><a href="baidu.com">unblock</a></td>
-      </tr>
-      <tr>
-        <td>bubusan</td>
-        <td><a>unblock</a></td>
-      </tr>
-      <tr>
-        <td>bubusan</td>
-        <td><a>unblock</a></td>
-      </tr>
-    </tbody>
-  </table>
+
+
+
+
+
 
   <script src="/js/jquery-3.4.1.min.js"></script>
   <script src="/js/common.js"></script>

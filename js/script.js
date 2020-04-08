@@ -20,7 +20,7 @@ $(document).ready(function () {
     blocked_blocks = new Set()
     //已经用于填充的问题块数
     filling_blocks_count = 0
-    
+
     //监听blocks变化
     setInterval(() => {
         if (extension_enabled && data_loaded)
@@ -176,6 +176,12 @@ function block_user(user_name, auto_blocked = true) {
     chrome.storage.local.set({ "blocked_users": clone })
 }
 
+//添加用户到白名单
+function add_white_list(user_name) {
+    white_list.push(user_name)
+    chrome.storage.local.set({ "white_list": Array.from(new Set(white_list)) })
+}
+
 
 
 function get_paint_info(txt) {
@@ -254,14 +260,36 @@ function do_painting(ele) {
     //自动屏蔽
     if (is_auto_blocked && auto_block)
         block_user(usr.text())
-
+    let in_white_list = white_list.indexOf(usr.text()) != -1
     //添加屏蔽选项
-    let a = $("<a title='block this user'>❌</a>")
+    let a = null
+    //如果不存在于白名单则添加屏蔽选项
+    if (!in_white_list) {
+        a = $("<a class='block' title='block this user'>❌</a>")
+        a.before("&nbsp;")
+        a.click(function (e) {
+            e.preventDefault()
+            block_user(usr.text(), false)
+
+            each_user_blocks(usr.text(), function () {
+                do_painting(ele)
+            })
+
+        })
+        wrp.append(a)
+    }
+
+    //添加白名单选项
+    a = $("<a class='white' title='add this user to white list'>" + (in_white_list ? "💗" : "💚") + "</a>")
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
-        block_user(usr.text(), false)
-        do_painting(ele)
+        add_white_list(usr.text())
+        //将用户的问题去除白名单和黑名单选项
+        each_user_blocks(usr.text(), function () {
+            $(this).find(".block").remove()
+        })
+        a.text("💗")
     })
     wrp.append(a)
 
@@ -300,11 +328,18 @@ function do_featrued_painting(ele) {
 }
 //判断是否块块是否需要重绘
 function check_block(ele, why) {
+
     //如果已经屏蔽，则不用画了
     if (blocked_blocks.has(ele))
         return false
 
     let usr = $(ele).find(".username")
+    // console.log("white_list:"+white_list)
+    // console.log("usr:"+usr)
+    //如果在白名单里则不必屏蔽
+    if (white_list.indexOf(usr.text()) >= 0) {
+        return true
+    }
 
     if (blocked_users.indexOf(usr.text()) > -1) {
         //如果用户被屏蔽，则隐藏这个提问
@@ -331,6 +366,14 @@ function check_block(ele, why) {
     }
 
     return true
+}
+
+function each_user_blocks(username, handler) {
+    $(".d_block").each(function () {
+        if ($(this).find(".username").text() == username) {
+            handler.call(this)
+        }
+    })
 }
 
 //获得用户提问，回应率，回答数

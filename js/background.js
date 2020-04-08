@@ -16,6 +16,8 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
+// chrome.storage.local.set({"white_list":["hello"]})
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
   //在这里初始化变量
@@ -27,7 +29,8 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     "block_rate_below": 0.3,
     "show_log": false,
     "blocked_users": [],
-    "result_buffer": {}
+    "result_buffer": {},
+    "white_list": []
   }
 
   //数据加载完后添加全局变量data_loaded
@@ -53,7 +56,6 @@ function preload(dict) {
       }
     }
   })
-  
 }
 
 //添加一个页面变量值，如果不存在则创建并设置默认值

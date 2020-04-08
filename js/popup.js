@@ -25,23 +25,69 @@ $("#featured").click(function (e) {
     }
 })
 
-SetBinding("extension_enabled", $("#switch").get(0))
-SetBinding("auto_block", $("#auto").get(0))
-SetBinding("need_featured_answer", $("#featured").get(0))
-SetBinding("cache_new_users", $("#cache_new_users").get(0))
-SetBinding("block_rate_below", $("#block_rate_below").get(0))
-SetBinding("show_log", $("#show_log").get(0))
+set_binding("extension_enabled", $("#switch").get(0))
+set_binding("auto_block", $("#auto").get(0))
+set_binding("need_featured_answer", $("#featured").get(0))
+set_binding("cache_new_users", $("#cache_new_users").get(0))
+set_binding("block_rate_below", $("#block_rate_below").get(0))
+set_binding("show_log", $("#show_log").get(0))
 
-blocking_user = false
-blocked_users = []
-chrome.storage.local.get(["blocked_users"], function (rslt) {
-    blocked_users = typeof rslt.blocked_users === "undefined" ? [] : rslt.blocked_users
+binding_list("blocked_users", $("#blocked_users").get(0))
+binding_list("white_list", $("#white_list").get(0))
 
-    show_blocked_users()
-    console.log(blocked_users)
-})
+function binding_list(key, tbody) {
 
-function SetBinding(key1, check1) {
+    ((key, tbody) => {
+        let list = []
+
+        chrome.storage.local.get([key], function (rslt) {
+
+            list = typeof rslt[key] === "undefined" ? [] : rslt[key]
+
+            show_list()
+            console.log(list)
+
+            function remove_block(username) {
+                while (list.indexOf(username) > -1) {
+                    list.splice(list.indexOf(username), 1)
+                }
+                var obj={  }
+                obj[key]=list
+                chrome.storage.local.set(obj)
+            }
+
+            function show_list() {
+                $(tbody).empty()
+                for (const u of list) {
+
+                    let tr = $("<tr>")
+                    tr.append($("<td>" + u + "</td>"))
+                    let a = $("<a href='#'' style='text-decoration: none' title='Remove this user from the list'>❌</a>")
+                    a.click(function () {
+                        $(this).closest("tr").hide()
+
+                        remove_block(u)
+
+                    })
+                    let db = $("<td></td>")
+                    db.append(a)
+                    tr.append(db)
+                    $(tbody).append(tr)
+
+                }
+            }
+        })
+
+    })(key, tbody)
+}
+
+
+
+
+
+
+
+function set_binding(key1, check1) {
     let key = key1
     let check = check1
     $(check).change(function () {
@@ -52,10 +98,10 @@ function SetBinding(key1, check1) {
 
         switch (check.type) {
             case "checkbox":
-                 $(check).attr("checked", result[key])
-                 break
+                $(check).attr("checked", result[key])
+                break
             default:
-                 $(check).val(result[key])
+                $(check).val(result[key])
         }
         $(check).trigger("change");
         set_status()
@@ -80,8 +126,6 @@ function SetBinding(key1, check1) {
         obj[key] = value
         chrome.storage.local.set(obj)
     }
-
-
 }
 
 
@@ -98,32 +142,3 @@ function update_cache() {
 }
 
 
-function remove_block(username) {
-    while (blocked_users.indexOf(username) > -1) {
-        blocked_users.splice(blocked_users.indexOf(username), 1)
-    }
-    chrome.storage.local.set({ blocked_users: blocked_users })
-    
-    // show_blocked_users()
-}
-
-function show_blocked_users() {
-    $("#blocked_users").empty()
-    for (const u of blocked_users) {
-
-        let tr = $("<tr>")
-        tr.append($("<td>" + u + "</td>"))
-        let a = $("<a href='#'' style='text-decoration: none' title='Remove this user from blocking list'>❌</a>")
-        a.click(function () {
-            $(this).closest("tr").hide()
-
-            remove_block(u)
-
-        })
-        let db = $("<td></td>")
-        db.append(a)
-        tr.append(db)
-        $("#blocked_users").append(tr)
-
-    }
-}
