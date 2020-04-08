@@ -64,17 +64,24 @@ function handler() {
                 return
             }
 
-            //如果该用户已经加载过了就不用了
+            //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
             if (typeof result_buffer[usr] === "undefined") {
                 //没有加载过就继续
                 log("usr not in buffer:" + usr)
             }
-            else {
-                //已经加载过了
-                //如果是新的方块则重新画一遍
-                do_painting(b_block, result_buffer[usr].txt)
-                return
+            else if (!(typeof validity_duration === "undefined")) {
+                let duration = (new Date().getTime() - result_buffer[usr].time) / 86400
+                log("validity_duration:" + validity_duration + "duration:" + duration)
+                if (duration >= validity_duration) {
+                    log(usr+" data expired!")
+                } else {
+                    //已经加载过了
+                    //如果是新的方块则重新画一遍
+                    do_painting(b_block, result_buffer[usr].txt)
+                    return
+                }
             }
+
             //发送请求
             let oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
@@ -149,8 +156,6 @@ function update_result_buffer() {
             }
         }
         for (const usr of not_recording) {
-            // log("not caching new usr:" + usr)
-            // log(clone[usr])
             delete clone[usr]
         }
     }
@@ -270,9 +275,8 @@ function do_painting(ele) {
         a.click(function (e) {
             e.preventDefault()
             block_user(usr.text(), false)
-
             each_user_blocks(usr.text(), function () {
-                do_painting(ele)
+                do_painting(this)
             })
 
         })
@@ -334,8 +338,6 @@ function check_block(ele, why) {
         return false
 
     let usr = $(ele).find(".username")
-    // console.log("white_list:"+white_list)
-    // console.log("usr:"+usr)
     //如果在白名单里则不必屏蔽
     if (white_list.indexOf(usr.text()) >= 0) {
         return true
@@ -384,8 +386,7 @@ function get_user_info(p_url, usr) {
         let req = new XMLHttpRequest();
         req.addEventListener("load", function (evt1) {
             let txt = evt1.srcElement.response
-
-            let buffer = { info: get_paint_info(txt), profile_url: p_url1, usr: usr1 }
+            let buffer = { info: get_paint_info(txt), profile_url: p_url1, usr: usr1, time: new Date().getTime() }
             resolve(buffer)
             return
         })
@@ -449,6 +450,8 @@ function get_user_feartured_answer(p_url, buffer) {
 
                     //当所有的问题都加载完，统计结果，并添加到缓存中
                     if (blocks_count == buffer.answers) {
+                        //更新时间
+                        buffer.time = new Date().getTime()
                         log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
                         resolve(buffer)
                         return

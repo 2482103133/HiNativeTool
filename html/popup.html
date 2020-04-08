@@ -35,7 +35,11 @@
       </tr>
       <tr>
         <td>Block rate:</td>
-        <td><input id="block_rate_below" type="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+        <td><input id="block_rate_below" type="range" style="width: 120px;" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+      </tr>
+      <tr>
+        <td>Data validity duration(d):</td>
+        <td><input id="validity_duration" type="number" style="text-align: right;width: 120px;"  min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
       </tr>
       <tr>
         <td> Clear cached data:</td>

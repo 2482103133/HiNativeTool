@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
-// chrome.storage.local.set({"white_list":["hello"]})
+chrome.storage.local.set({"validity_duration":7})
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
@@ -28,6 +28,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     "cache_new_users": false,
     "block_rate_below": 0.3,
     "show_log": false,
+    "validity_duration": 7,
     "blocked_users": [],
     "result_buffer": {},
     "white_list": []
