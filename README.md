@@ -27,8 +27,9 @@
 4. 进入[HiNative](https://hinative.com),就可以看到右上角点亮的此HiNative插件 
 
 #### 方案二
+> *注：crx文件可能不是最新的.*
 1. 下载项目根目录下的crx文件到本地
-2. 打开页面<chrome://extensions/>
+2. 打开页面[extensions](chrome://extensions/)
 3. 将crx文件拖动进该页面，确认即可
 
  
