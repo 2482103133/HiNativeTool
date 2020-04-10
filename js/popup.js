@@ -1,10 +1,13 @@
+
+
+function setup_popup(){
 //清空缓存的用户数据
 $("#cached").click(function () {
     clear_cache()
 })
 //更新缓存的用户数据
 $("#update").click(function () {
-    update_cache()
+    popup_update_cache()
 })
 
 //设置title为value
@@ -34,13 +37,16 @@ set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
+}
+
+
 
 function binding_list(key, tbody) {
 
     ((key, tbody) => {
         let list = []
 
-        chrome.storage.local.get([key], function (rslt) {
+        storage.get([key], function (rslt) {
 
             list = typeof rslt[key] === "undefined" ? [] : rslt[key]
 
@@ -51,9 +57,9 @@ function binding_list(key, tbody) {
                 while (list.indexOf(username) > -1) {
                     list.splice(list.indexOf(username), 1)
                 }
-                var obj={  }
+                window. obj={  }
                 obj[key]=list
-                chrome.storage.local.set(obj)
+                storage.set(obj)
             }
 
             function show_list() {
@@ -81,21 +87,14 @@ function binding_list(key, tbody) {
     })(key, tbody)
 }
 
-
-
-
-
-
-
 function set_binding(key1, check1) {
     let key = key1
     let check = check1
     $(check).change(function () {
         set_status()
     })
-
-    chrome.storage.local.get([key], function (result) {
-
+    
+    storage.get([key], function (result) {
         switch (check.type) {
             case "checkbox":
                 $(check).attr("checked", result[key])
@@ -106,7 +105,6 @@ function set_binding(key1, check1) {
         $(check).trigger("change");
         set_status()
     })
-
 
     function set_status() {
         let value = (function () {
@@ -119,24 +117,24 @@ function set_binding(key1, check1) {
         })()
         console.log("value:" + value)
 
-        chrome.tabs.executeScript({
+        mode.ExecuteScript({
             code: key + '=' + value
         }, () => chrome.runtime.lastError);
         let obj = {}
         obj[key] = value
-        chrome.storage.local.set(obj)
+        storage.set(obj)
     }
 }
 
 
 function clear_cache() {
-    chrome.storage.local.set({ "result_buffer": {} }, function () {
+    storage.set({ "result_buffer": {} }, function () {
         console.log("cache cleared!")
     })
 }
 
-function update_cache() {
-    chrome.tabs.executeScript({
+function popup_update_cache() {
+    mode.ExecuteScript({
         code: "update_cache()"
     }, () => chrome.runtime.lastError);
 }

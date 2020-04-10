@@ -1,3 +1,247 @@
+
+// ==UserScript==
+// @name         HinativeTool
+// @namespace    http://tampermonkey.net/
+// @version      0.2
+// @description  Handy Hinative tool!
+// @author       Collen Zhou
+// @match        *://hinative.com/*
+// @grant        unsafeWindow
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_listValues
+// @require      http://code.jquery.com/jquery-3.4.1.min.js
+// ==/UserScript==
+//The file is auto created with script, changes might get lost!
+(function() {
+    'use strict';
+    console.log("running")
+    window. gm_get = GM_getValue
+    window. gm_set = GM_setValue
+    function toggle_setting(){
+            let visible=$('#popup').is(':visible')
+            var pop_up=$(window.popuphtml)
+            $('#popup').replaceWith(pop_up)
+            setup_popup()
+            if(visible)
+            pop_up.hide()
+            else{
+            pop_up.show()
+            }
+    }
+    
+    let s=$("<span></span>")
+    let ts=$("<span id='setting' title='sript settings' style='font-size: 22px;cursor: pointer;'  >⚙️</span>")
+    ts.click(toggle_setting)
+    s.append(ts)
+    $(".nav_activity").after(s)
+console.log("test success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+window. TMStorage = function () {
+}
+//添加TM支持
+TMStorage.prototype = {
+  get: function (keys, callback) {
+    let count = 0;
+    let sum = keys.length
+    let obj = {}
+
+    for (let key of keys) {
+      let key1 = key
+      window. result = gm_get(key1)
+      console.log("get result:"+result)
+      if (result == "undefined")
+      {
+        console.log("undefined")
+        continue
+      }
+        
+      else
+      {
+        console.log("not undefined")
+        obj[key1] = gm_get(key1)
+      }
+        
+    }
+
+    callback(obj)
+  },
+  set: function (obj1, callback) {
+    let count = 0;
+    let sum = Object.keys(obj1).length
+    let obj = obj1
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        gm_set(key, value)
+      }
+    }
+    if (typeof callback === "undefined")
+      return
+    else {
+      callback(obj)
+    }
+  }
+}
+TMStorage.prototype.constructor = TMStorage
+
+window. Mode = function () {
+}
+
+Mode.prototype = {
+  Mode: null,
+  Storage: null,
+  OnInstalled: function (callback) { },
+  OnPageUpdate: function (callback) { },
+  ExecuteScript: function (script, callback) { }
+}
+Mode.prototype.constructor = Mode
+
+//添加TM支持
+window. TMMode = function () {
+  Mode.call(this)
+  this.Mode = "TM"
+  this.Storage = new TMStorage()
+
+  this.OnPageUpdated = function (callback) {
+    callback.call(this)
+  }
+  this.ExecuteScript = function (obj, callback) {
+    console.log("execute:")
+    console.log(obj)
+    eval(obj.code)
+    eval("console.log('eval:"+obj.code+"')")
+    callback.call(this)
+  }
+
+}
+TMMode.prototype = new Mode()
+TMMode.prototype.constructor = new TMMode()
+
+window. ExtensionMode = function () {
+  Mode.call(this)
+  this.Mode = "extension"
+  this.Storage = chrome.storage.local
+  this.OnPageUpdated = function (callback) {
+    chrome.tabs.onUpdated.addListener(callback)
+  }
+  this.OnInstalled = function (callback) {
+    chrome.runtime.onInstalled.addListener(callback)
+  }
+  this.ExecuteScript = function (script, callback) {
+    chrome.tabs.executeScript(script, callback)
+  }
+}
+ExtensionMode.prototype = new Mode()
+ExtensionMode.prototype.constructor = ExtensionMode
+
+window. mode = new TMMode()
+window. storage = mode.Storage
+
+
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+'use strict';
+mode.OnInstalled(function () {
+  //添加popup
+  chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
+    chrome.declarativeContent.onPageChanged.addRules([{
+      conditions: [new chrome.declarativeContent.PageStateMatcher({
+        pageUrl: { hostEquals: 'hinative.com' },
+      })
+      ],
+      actions: [new chrome.declarativeContent.ShowPageAction()]
+    }]);
+  });
+})
+// execute_script("window.need_featured_answer=true")
+
+mode.OnPageUpdated(function (tabId, changeInfo, tab) {
+  execute_script("window.data_loaded=false")
+  //在这里初始化变量
+  let obj={
+    "extension_enabled": true,
+    "auto_block": false,
+    "need_featured_answer": true,
+    "cache_new_users": false,
+    "block_rate_below": 0.3,
+    "show_log": false,
+    "validity_duration": 7,
+    "blocked_users": [],
+    "result_buffer": {},
+    "white_list": []
+  }
+  //数据加载完后添加全局变量data_loaded
+  preload(obj).then(function(){
+    // alert("preloaded")
+    execute_script("window.data_loaded=true")
+  })
+})
+
+//执行一个字典里所有的脚本，并在所有脚本都执行完后调用resolve
+function preload(dict) {
+  let len = Object.keys(dict).length
+  let count = 0;
+  return new Promise(resolve=>{
+    for (let key in dict) {
+      if (dict.hasOwnProperty(key)) {
+        let val = dict[key];
+        let key1 = key
+         add_script_value(key1, val).then(function () {
+          if (++count == len) {
+            resolve()
+          }
+        })
+      }
+    }
+  })
+}
+
+//添加一个页面变量值，如果不存在则创建并设置默认值
+function add_script_value(key1, dflt1) {
+  let key = key1
+  let dflt = dflt1
+  return new Promise(resolve => {
+    storage.get([key], function (result) {
+      console.log("get result:")
+      console.log(result)
+
+      if (typeof result[key] == "undefined") {
+        let obj = {}
+        obj[key] = dflt
+        console.log("set:"+key+" = "+dflt)
+        storage.set(obj)
+        result[key] = dflt
+      }
+
+      let code = "window."+key + ' = ' +JSON.stringify(result[key])
+      // console.log(code)
+      execute_script(code).then(function () {
+        resolve()
+      });
+     
+    });
+  })
+}
+
+
+
+//执行一个脚本返回resolve
+function execute_script(script) {
+  let script1=script
+  return new Promise(resolve=>{
+    mode.ExecuteScript({
+      code: script1
+    },()=>{
+      console.log("excecute outer")
+      let e=chrome.runtime.lastError 
+      resolve()
+    })
+  })
+}
+
+
 $(document).ready(function () {
     // https://hinative.com/en-US 只监听qeustions路径
     if (!window.location.pathname.match(/^\/[^\/]*$/))
@@ -543,3 +787,236 @@ function log(obj) {
 
 
 
+
+window.popuphtml=String.raw`<div id='popup' style='display: inline-block;position: absolute;z-index: 100;background: white;transform: translate(0, 100%);border-style: double;bottom: 0;left: 0;'><!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+</head>
+
+<body style="width: 300px;height: 500px;">
+  <table style="text-align: right;">
+    <thead>
+      <tr>Options</tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Turn on:</td>
+        <td><input id="switch" type="checkbox" title="Check to allow this extension to function" /><br /></td>
+      </tr>
+      <tr>
+        <td>Auto block:</td>
+        <td><input id="auto" type="checkbox" title="Allow this script to block users automatically" /><br /></td>
+      </tr>
+      <tr>
+        <td>Featured answer:</td>
+        <td><input id="featured" type="checkbox" title="Check to buffer and show user answer-featuring rate" /><br />
+        </td>
+      </tr>
+      <tr>
+        <td>Cache new users:</td>
+        <td><input id="cache_new_users" type="checkbox"
+            title="Check to cache new user's data,this option can be reverted." /><br /></td>
+      </tr>
+      <tr>
+        <td>Show log:</td>
+        <td><input id="show_log" type="checkbox" title="Show developer log" /><br /></td>
+      </tr>
+      <tr>
+        <td>Block rate:</td>
+        <td><input id="block_rate_below" type="range" style="width: 120px;" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+      </tr>
+      <tr>
+        <td>Data validity duration(d):</td>
+        <td><input id="validity_duration" type="number" style="text-align: right;width: 120px;"  min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+      </tr>
+      <tr>
+        <td> Clear cached data:</td>
+        <td><input id="cached" type="button" value="🚮"
+            title="Clear buffered responses,you might need to re-reqeust those data!"
+            style="border-style: outset;padding: 0%;"></input><br /></td>
+      </tr>
+      <tr>
+        <td> Update Chached Data:</td>
+        <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
+            style="border-style: outset;padding: 0%;"></input><br /></td>
+      </tr>
+      <tr >
+        <td style="text-align: left;border-style: double;">
+          <table >
+            <thead>
+              <tr>Blocked Users</tr>
+            </thead>
+            <tbody id="blocked_users" style="display: inline-block;height: 300px;overflow: scroll;">
+            </tbody>
+          </table>
+        </td>
+        <td style="text-align: left;border-style: double;">
+          <table>
+            <thead>
+              <tr>White List</tr>
+            </thead>
+            <tbody id="white_list" style="display: inline-block;height: 300px;overflow: scroll;">
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <script >
+    var i=0;
+  </script>
+
+  <script src="/js/jquery-3.4.1.min.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/popup.js"></script>
+</body>
+</html></div>`
+s.append(window.popuphtml)
+
+
+function setup_popup(){
+//清空缓存的用户数据
+$("#cached").click(function () {
+    clear_cache()
+})
+//更新缓存的用户数据
+$("#update").click(function () {
+    popup_update_cache()
+})
+
+//设置title为value
+$("#block_rate_below").change(function () {
+    console.log("change")
+    this.title = $(this).val()
+})
+
+$("#featured").click(function (e) {
+
+    if ($(this).is(":checked")) {
+        if (confirm("Warning:Cache will be cleared,continue?")) {
+            clear_cache()
+        }
+        else {
+            e.preventDefault()
+        }
+    }
+})
+
+set_binding("extension_enabled", $("#switch").get(0))
+set_binding("auto_block", $("#auto").get(0))
+set_binding("need_featured_answer", $("#featured").get(0))
+set_binding("cache_new_users", $("#cache_new_users").get(0))
+set_binding("block_rate_below", $("#block_rate_below").get(0))
+set_binding("show_log", $("#show_log").get(0))
+set_binding("validity_duration", $("#validity_duration").get(0))
+binding_list("blocked_users", $("#blocked_users").get(0))
+binding_list("white_list", $("#white_list").get(0))
+}
+
+
+
+function binding_list(key, tbody) {
+
+    ((key, tbody) => {
+        let list = []
+
+        storage.get([key], function (rslt) {
+
+            list = typeof rslt[key] === "undefined" ? [] : rslt[key]
+
+            show_list()
+            console.log(list)
+
+            function remove_block(username) {
+                while (list.indexOf(username) > -1) {
+                    list.splice(list.indexOf(username), 1)
+                }
+                window. obj={  }
+                obj[key]=list
+                storage.set(obj)
+            }
+
+            function show_list() {
+                $(tbody).empty()
+                for (const u of list) {
+
+                    let tr = $("<tr>")
+                    tr.append($("<td>" + u + "</td>"))
+                    let a = $("<a href='#'' style='text-decoration: none' title='Remove this user from the list'>❌</a>")
+                    a.click(function () {
+                        $(this).closest("tr").hide()
+
+                        remove_block(u)
+
+                    })
+                    let db = $("<td></td>")
+                    db.append(a)
+                    tr.append(db)
+                    $(tbody).append(tr)
+
+                }
+            }
+        })
+
+    })(key, tbody)
+}
+
+function set_binding(key1, check1) {
+    let key = key1
+    let check = check1
+    $(check).change(function () {
+        set_status()
+    })
+    
+    storage.get([key], function (result) {
+        switch (check.type) {
+            case "checkbox":
+                $(check).attr("checked", result[key])
+                break
+            default:
+                $(check).val(result[key])
+        }
+        $(check).trigger("change");
+        set_status()
+    })
+
+    function set_status() {
+        let value = (function () {
+            switch (check.type) {
+                case "checkbox":
+                    return $(check).is(":checked")
+                default:
+                    return $(check).val()
+            }
+        })()
+        console.log("value:" + value)
+
+        mode.ExecuteScript({
+            code: key + '=' + value
+        }, () => chrome.runtime.lastError);
+        let obj = {}
+        obj[key] = value
+        storage.set(obj)
+    }
+}
+
+
+function clear_cache() {
+    storage.set({ "result_buffer": {} }, function () {
+        console.log("cache cleared!")
+    })
+}
+
+function popup_update_cache() {
+    mode.ExecuteScript({
+        code: "update_cache()"
+    }, () => chrome.runtime.lastError);
+}
+
+
+
+
+    $('#popup').hide()
+    })();

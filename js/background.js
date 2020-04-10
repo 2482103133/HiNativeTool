@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 'use strict';
-chrome.runtime.onInstalled.addListener(function () {
+mode.OnInstalled(function () {
   //添加popup
   chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
     chrome.declarativeContent.onPageChanged.addRules([{
@@ -14,17 +14,16 @@ chrome.runtime.onInstalled.addListener(function () {
       actions: [new chrome.declarativeContent.ShowPageAction()]
     }]);
   });
-});
+})
+// execute_script("window.need_featured_answer=true")
 
-chrome.storage.local.set({"validity_duration":7})
-
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-
+mode.OnPageUpdated(function (tabId, changeInfo, tab) {
+  execute_script("window.data_loaded=false")
   //在这里初始化变量
   let obj={
     "extension_enabled": true,
     "auto_block": false,
-    "need_featured_answer": false,
+    "need_featured_answer": true,
     "cache_new_users": false,
     "block_rate_below": 0.3,
     "show_log": false,
@@ -33,12 +32,12 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     "result_buffer": {},
     "white_list": []
   }
-
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){
-    execute_script("data_loaded=true")
+    // alert("preloaded")
+    execute_script("window.data_loaded=true")
   })
-});
+})
 
 //执行一个字典里所有的脚本，并在所有脚本都执行完后调用resolve
 function preload(dict) {
@@ -64,16 +63,19 @@ function add_script_value(key1, dflt1) {
   let key = key1
   let dflt = dflt1
   return new Promise(resolve => {
-    chrome.storage.local.get([key], function (result) {
-      if (typeof result[key] === "undefined") {
+    storage.get([key], function (result) {
+      console.log("get result:")
+      console.log(result)
+
+      if (typeof result[key] == "undefined") {
         let obj = {}
         obj[key] = dflt
-        chrome.storage.local.set(obj)
+        console.log("set:"+key+" = "+dflt)
+        storage.set(obj)
         result[key] = dflt
       }
 
-      let cmd = key + '=' +JSON.stringify(result[key])
-      let code = cmd
+      let code = "window."+key + ' = ' +JSON.stringify(result[key])
       // console.log(code)
       execute_script(code).then(function () {
         resolve()
@@ -83,13 +85,16 @@ function add_script_value(key1, dflt1) {
   })
 }
 
+
+
 //执行一个脚本返回resolve
 function execute_script(script) {
   let script1=script
   return new Promise(resolve=>{
-    chrome.tabs.executeScript({
+    mode.ExecuteScript({
       code: script1
     },()=>{
+      console.log("excecute outer")
       let e=chrome.runtime.lastError 
       resolve()
     })
