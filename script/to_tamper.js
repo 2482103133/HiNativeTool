@@ -37,13 +37,14 @@ result = String.raw`
     function toggle_setting(){
             let visible=$('#popup').is(':visible')
             var pop_up=$(window.popuphtml)
-            $('#popup').replaceWith(pop_up)
-            setup_popup()
             if(visible)
             pop_up.hide()
             else{
             pop_up.show()
             }
+            $('#popup').replaceWith(pop_up)
+            setup_popup()
+            
     }
     
     let s=$("<span></span>")
@@ -59,7 +60,7 @@ function generate() {
     result += inject("js/common.js")
     result += inject("js/background.js")
     result += inject("js/script.js")
-    result += "window.popuphtml=String.raw`<div id='popup' style='display: inline-block;position: absolute;z-index: 100;background: white;transform: translate(0, 100%);border-style: double;bottom: 0;left: 0;'>" + fs.readFileSync(popup_uri, "utf8") + "</div>`\n"
+    result += "window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-block;position: absolute;z-index: 100;background: white;transform: translate(0, 100%);border-style: double;bottom: 0;left: 0;'>" + fs.readFileSync(popup_uri, "utf8") + "</div>`\n"
     result += "s.append(window.popuphtml)\n"
     result += inject("js/popup.js")
     result += String.raw

@@ -15,19 +15,20 @@
 //The file is auto created with script, changes might get lost!
 (function() {
     'use strict';
-    console.log("running")
+    console.log("Hinative tool is running!")
     window. gm_get = GM_getValue
     window. gm_set = GM_setValue
     function toggle_setting(){
             let visible=$('#popup').is(':visible')
             var pop_up=$(window.popuphtml)
-            $('#popup').replaceWith(pop_up)
-            setup_popup()
             if(visible)
             pop_up.hide()
             else{
             pop_up.show()
             }
+            $('#popup').replaceWith(pop_up)
+            setup_popup()
+            
     }
     
     let s=$("<span></span>")
@@ -790,14 +791,14 @@ function update_cache() {
 
 
 
-window.popuphtml=String.raw`<div id='popup' style='display: inline-block;position: absolute;z-index: 100;background: white;transform: translate(0, 100%);border-style: double;bottom: 0;left: 0;'><!DOCTYPE html>
+window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-block;position: absolute;z-index: 100;background: white;transform: translate(0, 100%);border-style: double;bottom: 0;left: 0;'><!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="UTF-8">
 </head>
 
-<body style="width: 300px;height: 500px;">
+<body style="width: 400px;height: 500px;">
   <table style="text-align: right;">
     <thead>
       <tr>Options</tr>
@@ -808,11 +809,11 @@ window.popuphtml=String.raw`<div id='popup' style='display: inline-block;positio
         <td><input id="switch" type="checkbox" title="Check to allow this extension to function" /><br /></td>
       </tr>
       <tr>
-        <td>Auto block:</td>
+        <td>Auto-block:</td>
         <td><input id="auto" type="checkbox" title="Allow this script to block users automatically" /><br /></td>
       </tr>
       <tr>
-        <td>Featured answer:</td>
+        <td>Featured answers:</td>
         <td><input id="featured" type="checkbox" title="Check to buffer and show user answer-featuring rate" /><br />
         </td>
       </tr>
@@ -826,7 +827,7 @@ window.popuphtml=String.raw`<div id='popup' style='display: inline-block;positio
         <td><input id="show_log" type="checkbox" title="Show developer log" /><br /></td>
       </tr>
       <tr>
-        <td>Block rate:</td>
+        <td>Block rate below:</td>
         <td><input id="block_rate_below" type="range" style="width: 120px;" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
       </tr>
       <tr>
@@ -840,7 +841,7 @@ window.popuphtml=String.raw`<div id='popup' style='display: inline-block;positio
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>
       <tr>
-        <td> Update Chached Data:</td>
+        <td> Update chached data:</td>
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
             style="border-style: outset;padding: 0%;"></input><br /></td>
       </tr>

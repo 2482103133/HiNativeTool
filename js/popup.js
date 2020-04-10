@@ -1,5 +1,3 @@
-
-
 function setup_popup(){
 //清空缓存的用户数据
 $("#cached").click(function () {
@@ -12,7 +10,6 @@ $("#update").click(function () {
 
 //设置title为value
 $("#block_rate_below").change(function () {
-    
     this.title = $(this).val()
 })
 
@@ -37,6 +34,7 @@ set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
+
 }
 
 
