@@ -31,7 +31,7 @@ result = String.raw`
 //The file is auto created with script, changes might get lost!
 (function() {
     'use strict';
-    console.log("running")
+    console.log("Hinative tool is running!")
     window. gm_get = GM_getValue
     window. gm_set = GM_setValue
     function toggle_setting(){
@@ -56,7 +56,6 @@ console.log(process.cwd())
 function generate() {
     let to_url = "target.js"
     fs.writeFileSync("tmp.txt", include_scripts(popup_uri))
-    result += inject("js/test.js")
     result += inject("js/common.js")
     result += inject("js/background.js")
     result += inject("js/script.js")
@@ -89,22 +88,22 @@ function pac_sript_tag(src, tag = "script", type = "text/javascript") {
 
 function pack_to_data_url(src, type) {
     btoa
-    // console.log(src)
+    
     // return URL.createObjectURL(fs.readFileSync(src, "utf-8"))
     // return "data:"+type+"," + encodeURI(fs.readFileSync(src, "utf-8"))
     return "data:" + type + ",base64," + btoa(fs.readFileSync(src, "utf-8"))
 }
 function include_scripts(html_src) {
     let html = fs.readFileSync(html_src, "utf8")
-    // console.log(html)
+    
     let doms = $("<html>").append(html)
-    // console.log(doms)
+    
     doms.find("script").each(function () {
         if (typeof this.src === "undefined" || this.src == "")
             return
         let src = this.src
         let packed = pack_to_data_url("./" + src)
-        // console.log("script:\n"+src+"packed:\n"+packed)
+        
         this.src = packed
     })
 

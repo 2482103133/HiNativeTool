@@ -1,3 +1,4 @@
+
 window. TMStorage = function () {
 }
 //添加TM支持
@@ -10,16 +11,16 @@ TMStorage.prototype = {
     for (let key of keys) {
       let key1 = key
       window. result = gm_get(key1)
-      console.log("get result:"+result)
+      
       if (result == "undefined")
       {
-        console.log("undefined")
+        
         continue
       }
         
       else
       {
-        console.log("not undefined")
+        
         obj[key1] = gm_get(key1)
       }
         
@@ -68,10 +69,10 @@ window. TMMode = function () {
     callback.call(this)
   }
   this.ExecuteScript = function (obj, callback) {
-    console.log("execute:")
-    console.log(obj)
+   
     eval(obj.code)
-    eval("console.log('eval:"+obj.code+"')")
+    
+    
     callback.call(this)
   }
 
@@ -98,4 +99,9 @@ ExtensionMode.prototype.constructor = ExtensionMode
 
 window. mode = new TMMode()
 window. storage = mode.Storage
+
+function log(obj) {
+  if (show_log)
+      console.log(obj)
+}
 

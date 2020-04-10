@@ -12,7 +12,7 @@ $("#update").click(function () {
 
 //设置title为value
 $("#block_rate_below").change(function () {
-    console.log("change")
+    
     this.title = $(this).val()
 })
 
@@ -51,7 +51,7 @@ function binding_list(key, tbody) {
             list = typeof rslt[key] === "undefined" ? [] : rslt[key]
 
             show_list()
-            console.log(list)
+            
 
             function remove_block(username) {
                 while (list.indexOf(username) > -1) {
@@ -115,7 +115,7 @@ function set_binding(key1, check1) {
                     return $(check).val()
             }
         })()
-        console.log("value:" + value)
+        
 
         mode.ExecuteScript({
             code: key + '=' + value
@@ -129,7 +129,7 @@ function set_binding(key1, check1) {
 
 function clear_cache() {
     storage.set({ "result_buffer": {} }, function () {
-        console.log("cache cleared!")
+        log("cache cleared!")
     })
 }
 

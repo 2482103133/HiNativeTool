@@ -21,12 +21,12 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
   execute_script("window.data_loaded=false")
   //在这里初始化变量
   let obj={
+    "show_log": false,
     "extension_enabled": true,
     "auto_block": false,
     "need_featured_answer": true,
     "cache_new_users": false,
     "block_rate_below": 0.3,
-    "show_log": false,
     "validity_duration": 7,
     "blocked_users": [],
     "result_buffer": {},
@@ -64,19 +64,19 @@ function add_script_value(key1, dflt1) {
   let dflt = dflt1
   return new Promise(resolve => {
     storage.get([key], function (result) {
-      console.log("get result:")
-      console.log(result)
+      
+      
 
       if (typeof result[key] == "undefined") {
         let obj = {}
         obj[key] = dflt
-        console.log("set:"+key+" = "+dflt)
-        storage.set(obj)
+        
+        // storage.set(obj)
         result[key] = dflt
       }
 
       let code = "window."+key + ' = ' +JSON.stringify(result[key])
-      // console.log(code)
+      
       execute_script(code).then(function () {
         resolve()
       });
@@ -94,7 +94,7 @@ function execute_script(script) {
     mode.ExecuteScript({
       code: script1
     },()=>{
-      console.log("excecute outer")
+      
       let e=chrome.runtime.lastError 
       resolve()
     })

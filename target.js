@@ -35,7 +35,7 @@
     ts.click(toggle_setting)
     s.append(ts)
     $(".nav_activity").after(s)
-console.log("test success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
 window. TMStorage = function () {
 }
 //添加TM支持
@@ -48,16 +48,16 @@ TMStorage.prototype = {
     for (let key of keys) {
       let key1 = key
       window. result = gm_get(key1)
-      console.log("get result:"+result)
+      
       if (result == "undefined")
       {
-        console.log("undefined")
+        
         continue
       }
         
       else
       {
-        console.log("not undefined")
+        
         obj[key1] = gm_get(key1)
       }
         
@@ -106,10 +106,10 @@ window. TMMode = function () {
     callback.call(this)
   }
   this.ExecuteScript = function (obj, callback) {
-    console.log("execute:")
-    console.log(obj)
+   
     eval(obj.code)
-    eval("console.log('eval:"+obj.code+"')")
+    
+    
     callback.call(this)
   }
 
@@ -137,6 +137,11 @@ ExtensionMode.prototype.constructor = ExtensionMode
 window. mode = new TMMode()
 window. storage = mode.Storage
 
+function log(obj) {
+  if (show_log)
+      console.log(obj)
+}
+
 
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
@@ -161,12 +166,12 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
   execute_script("window.data_loaded=false")
   //在这里初始化变量
   let obj={
+    "show_log": false,
     "extension_enabled": true,
     "auto_block": false,
     "need_featured_answer": true,
     "cache_new_users": false,
     "block_rate_below": 0.3,
-    "show_log": false,
     "validity_duration": 7,
     "blocked_users": [],
     "result_buffer": {},
@@ -204,19 +209,19 @@ function add_script_value(key1, dflt1) {
   let dflt = dflt1
   return new Promise(resolve => {
     storage.get([key], function (result) {
-      console.log("get result:")
-      console.log(result)
+      
+      
 
       if (typeof result[key] == "undefined") {
         let obj = {}
         obj[key] = dflt
-        console.log("set:"+key+" = "+dflt)
-        storage.set(obj)
+        
+        // storage.set(obj)
         result[key] = dflt
       }
 
       let code = "window."+key + ' = ' +JSON.stringify(result[key])
-      // console.log(code)
+      
       execute_script(code).then(function () {
         resolve()
       });
@@ -234,7 +239,7 @@ function execute_script(script) {
     mode.ExecuteScript({
       code: script1
     },()=>{
-      console.log("excecute outer")
+      
       let e=chrome.runtime.lastError 
       resolve()
     })
@@ -778,10 +783,7 @@ function update_cache() {
     })
 }
 
-function log(obj) {
-    if (show_log)
-        console.log(obj)
-}
+
 
 
 
@@ -888,7 +890,7 @@ $("#update").click(function () {
 
 //设置title为value
 $("#block_rate_below").change(function () {
-    console.log("change")
+    
     this.title = $(this).val()
 })
 
@@ -927,7 +929,7 @@ function binding_list(key, tbody) {
             list = typeof rslt[key] === "undefined" ? [] : rslt[key]
 
             show_list()
-            console.log(list)
+            
 
             function remove_block(username) {
                 while (list.indexOf(username) > -1) {
@@ -991,7 +993,7 @@ function set_binding(key1, check1) {
                     return $(check).val()
             }
         })()
-        console.log("value:" + value)
+        
 
         mode.ExecuteScript({
             code: key + '=' + value
@@ -1005,7 +1007,7 @@ function set_binding(key1, check1) {
 
 function clear_cache() {
     storage.set({ "result_buffer": {} }, function () {
-        console.log("cache cleared!")
+        log("cache cleared!")
     })
 }
 
