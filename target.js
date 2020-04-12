@@ -259,35 +259,49 @@ $(document).ready(function () {
     //用来填充的个数
     //被屏蔽的用户列表
     // blocked_users = []
-    
+
     window.last_blocks_count = 0
     //现在是否正在blocking过程中
     window.blocking = false
     //新用户最大提问数
-    window. new_user_qustion_count = 3
+    window.new_user_qustion_count = 3
     //自动屏蔽的用户数组
-    window. auto_blocked_users = []
+    window.auto_blocked_users = []
     //已经被屏蔽的问题块
-    window. blocked_blocks = new Set()
+    window.blocked_blocks = new Set()
     //已经用于填充的问题块数
-    window. filling_blocks_count = 0
+    window.filling_blocks_count = 0
 
     //监听blocks变化
     setInterval(() => {
-        
-        
-        if ((!(typeof data_loaded==="undefined"))&&data_loaded&&extension_enabled )
-            handler()
+        if ((!(typeof data_loaded === "undefined")) && data_loaded && extension_enabled) {
+            process_blocking()
+            process_scroll()
+        }
     }, 200);
 
     $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
-    // mode.AddPopup()
+
 })
+function process_scroll() {
+    let visible_count=0
+    let qts=get_questions()
+    qts.each(function(){
+        if($(this).is(":visible"))
+        visible_count++
+    })
+    if(visible_count<3)
+    $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
+}
+
+function get_questions(){
+    return $(".d_block")
+}
 
 //主要的执行过程
-function handler() {
+function process_blocking() {
 
-    if ($(".d_block").length == last_blocks_count) {
+    if (get_questions().length == last_blocks_count) {
         //每两百毫秒执行一次,判断是否需要新的查询
         return
     }
@@ -299,34 +313,32 @@ function handler() {
 
     //阻塞标示，以免两个interval同时运行，造成多次paint
     blocking = true
-    last_blocks_count = $(".d_block").length
+    last_blocks_count = get_questions().length
 
     try {
         //得到自身信息
-        (function get_self_username(){
+        (function get_self_username() {
 
-            if(typeof self_name==="undefined")
-            {
-                let p_url=$(".spec_nav_profile>a").get(0).href
-                let req=request_get(p_url,null,false)
-                let name=to_jq(req.responseText).find(".owner_name>span").text().trim()
-                storage.set({"self_name":name})
-                storage.set({"self_url":p_url})
-                log("get self name:"+name+" self url:"+p_url)
+            if (typeof self_name === "undefined") {
+                let p_url = $(".spec_nav_profile>a").get(0).href
+                let req = request_get(p_url, null, false)
+                let name = to_jq(req.responseText).find(".owner_name>span").text().trim()
+                storage.set({ "self_name": name })
+                storage.set({ "self_url": p_url })
+                log("get self name:" + name + " self url:" + p_url)
             }
 
         })()
 
         //遍历每个回答
-        $(".d_block").each(function () {
+        get_questions().each(function () {
             let href = $(this).attr("href")
             let b_block = $(this).get(0)
-            let usr = jq_must_find(this,".username").text()
+            let usr = jq_must_find(this, ".username").text()
 
             //如果该问题已经被屏蔽,就不用画
-            if(blocked_quesions[href])
-            {
-                log("blocked question:"+href)
+            if (blocked_quesions[href]) {
+                log("blocked question:" + href)
                 add_block(b_block)
                 return
             }
@@ -349,12 +361,12 @@ function handler() {
             }
             else if (!(typeof validity_duration === "undefined")) {
 
-                let duration = (new Date().getTime() - result_buffer[usr].time) / (86400*1000)
+                let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
 
                 log("validity_duration:" + validity_duration + "duration:" + duration)
                 //判断数据是否过期,单位为天
                 if (duration >= validity_duration) {
-                    log(usr+" data expired!")
+                    log(usr + " data expired!")
                 } else {
                     //已经加载过了
                     //如果是新的方块则重新画一遍
@@ -364,25 +376,23 @@ function handler() {
             }
 
             //发送请求
-            request_get(href,function (evt) {
-                let q_url=href
+            request_get(href, function (evt) {
+                let q_url = href
 
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
-                let block=b_block
+                let block = b_block
                 //判断是不是选择型问题
-                if(page.find(".box_question_choice").length>0)
-                {
-                    let c_url=q_url+"/choice_result"
-                    let c_req = request_get(c_url,null,false);
+                if (page.find(".box_question_choice").length > 0) {
+                    let c_url = q_url + "/choice_result"
+                    let c_req = request_get(c_url, null, false);
                     //如果已经投过票了,则跳过这个问题
-                    if(c_req.responseText.indexOf(self_name)>-1)
-                    {
+                    if (c_req.responseText.indexOf(self_name) > -1) {
                         log("skip quesion because usr has selected")
                         add_block(block)
-                        blocked_quesions[q_url]=true
-                        storage.set({"blocked_quesions":blocked_quesions})
+                        blocked_quesions[q_url] = true
+                        storage.set({ "blocked_quesions": blocked_quesions })
                         return
                     }
                 }
@@ -417,9 +427,9 @@ function handler() {
 
                             result_buffer[buffer.usr] = buffer
                             //将所有同名的block都加上rate
-                            $(".d_block").each(function () {
+                            get_questions().each(function () {
                                 if (this.featrued_painted != true) {
-                                    let a_usr = jq_must_find(this,".username")
+                                    let a_usr = jq_must_find(this, ".username")
                                     if (a_usr.text() == buffer.usr) {
                                         do_featrued_painting(this)
                                     }
@@ -480,9 +490,8 @@ function block_user(user_name, auto_blocked = true) {
 }
 
 //将block屏蔽掉
-function add_block(ele)
-{
-    let usr=jq_must_find(ele,".username")
+function add_block(ele) {
+    let usr = jq_must_find(ele, ".username")
 
     //如果用户被屏蔽，则隐藏这个提问
     blocked_blocks.add(ele)
@@ -540,8 +549,8 @@ function do_painting(ele) {
 
     //设置一个painted属性
     ele.painted = true
-    let usr = jq_must_find(ele,".username")
-    let wrp = jq_must_find(ele,".username_wrapper")
+    let usr = jq_must_find(ele, ".username")
+    let wrp = jq_must_find(ele, ".username_wrapper")
     let buffer = result_buffer[usr.text()]
     let info = buffer.info
 
@@ -591,7 +600,7 @@ function do_painting(ele) {
     //自动屏蔽
     if (is_auto_blocked && auto_block)
         block_user(usr.text())
-        
+
     let in_white_list = white_list.indexOf(usr.text()) != -1
     //添加屏蔽选项
     let a = null
@@ -630,8 +639,8 @@ function do_painting(ele) {
 //添加采纳率
 function do_featrued_painting(ele) {
     ele.featrued_painted = true
-    let usr = jq_must_find(ele,".username")
-    let wrp = jq_must_find(ele,".username_wrapper")
+    let usr = jq_must_find(ele, ".username")
+    let wrp = jq_must_find(ele, ".username_wrapper")
     // log("result_buffer[" + usr.text() + "]:")
     // log(result_buffer[usr.text()])
     let a = result_buffer[usr.text()].answers
@@ -641,7 +650,7 @@ function do_featrued_painting(ele) {
     wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "NO ANSWERS") + "</span>")
     if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
-        jq_must_find(ele,".rate_badge",false).css("background-color", "red")
+        jq_must_find(ele, ".rate_badge", false).css("background-color", "red")
         if (auto_block) {
             block_user(usr.text())
             check_block(ele)
@@ -651,7 +660,7 @@ function do_featrued_painting(ele) {
 
     //采纳率大于0.6则标绿
     if (rate > 0.6) {
-        jq_must_find(ele,".rate_badge",false).css("background-color", "green")
+        jq_must_find(ele, ".rate_badge", false).css("background-color", "green")
     }
 
     return true
@@ -664,14 +673,14 @@ function check_block(ele, why) {
     if (blocked_blocks.has(ele))
         return false
 
-    let usr = jq_must_find(ele,".username")
+    let usr = jq_must_find(ele, ".username")
     //如果在白名单里则不必屏蔽
     if (white_list.indexOf(usr.text()) >= 0) {
         return true
     }
 
     if (blocked_users.indexOf(usr.text()) > -1) {
-        
+
         add_block(ele)
         return false
     }
@@ -680,9 +689,9 @@ function check_block(ele, why) {
 }
 
 function each_user_blocks(username, handler) {
-    
-    $(".d_block").each(function () {
-        if (jq_must_find(this,".username").text() == username) {
+
+    get_questions().each(function () {
+        if (jq_must_find(this, ".username").text() == username) {
             handler.call(this)
         }
     })
@@ -693,7 +702,7 @@ function get_user_info(p_url, usr) {
     let p_url1 = p_url
     let usr1 = usr
     return new Promise(resolve => {
-        request_get(p_url,function (evt1) {
+        request_get(p_url, function (evt1) {
             let txt = evt1.srcElement.response
             let buffer = { info: get_paint_info(txt), profile_url: p_url1, usr: usr1, time: new Date().getTime() }
             resolve(buffer)
@@ -725,9 +734,9 @@ function get_user_feartured_answer(p_url, buffer) {
             //初始化总的有回复的提问数
             buffer.answers = 0
             blocks.each(function () {
-              
-                
-                let badge = $(jq_must_find(this,".badge_item").get(0)).text().trim()
+
+
+                let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim()
                 log("usr-question:" + buffer.usr + " badge:" + badge)
                 //如果无人回答则不计入
                 if (badge == "0") {
@@ -777,21 +786,20 @@ function to_jq(html_text) {
     return page
 }
 
-function jq_must_find(ele,selector,force=true){
-    let find=$(ele).find(selector)
-    if(force&&find.length==0)
-    {
-        alert("未能找到关键样式:"+selector+" 请联系作者解决!,程序将被暂停运行~~")
-        extension_enabled=false
+function jq_must_find(ele, selector, force = true) {
+    let find = $(ele).find(selector)
+    if (force && find.length == 0) {
+        alert("未能找到关键样式:" + selector + " 请联系作者解决!,程序将被暂停运行~~")
+        extension_enabled = false
     }
     return find
 }
 
-function request_get(url,callback,async=true){
-    let req=new XMLHttpRequest()
-    if(callback)
-    req.addEventListener("load",callback)
-    req.open("GET",url,async)
+function request_get(url, callback, async = true) {
+    let req = new XMLHttpRequest()
+    if (callback)
+        req.addEventListener("load", callback)
+    req.open("GET", url, async)
     req.send()
     return req
 }
