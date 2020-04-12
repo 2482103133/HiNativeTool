@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         HinativeTool
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.43
 // @description  Handy Hinative tool!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
@@ -287,11 +287,21 @@ function process_scroll() {
     let visible_count=0
     let qts=get_questions()
     qts.each(function(){
-        if($(this).is(":visible"))
-        visible_count++
+        if(this.style.visibility!="hidden"&&this.style.display!="none"&&$(this).is(":visible")){
+            visible_count++
+        }
     })
     if(visible_count<3)
-    $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
+    {
+        log("auto scroll! visible count:"+visible_count)
+        let tmp=$("html").get(0).scrollTop
+        var div=$("<div style='display:block;height:"+window.innerHeight+"px;width:20px'>神奇的伸缩棒</div>")
+        $("body").append(div)
+        $("html").get(0).scrollTop = 0
+        $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
+        $("html").get(0).scrollTop=tmp
+        div.remove()
+    }
 }
 
 function get_questions(){
@@ -503,16 +513,16 @@ function add_block(ele) {
     }
 
     log("已隐藏用户问题:" + usr.text())
-
-    //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-    if (filling_blocks_count < 5) {
-        filling_blocks_count++
-        ele.style.visibility = "hidden"
-        $("body").after($(ele).detach())
-    }
-    else {
-        ele.style.display = "none"
-    }
+    ele.style.display = "none"
+    // //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
+    // if (filling_blocks_count < 5) {
+    //     filling_blocks_count++
+    //     ele.style.visibility = "hidden"
+    //     $("body").after($(ele).detach())
+    // }
+    // else {
+        
+    // }
 
 }
 

@@ -37,13 +37,16 @@ function process_scroll() {
     let visible_count=0
     let qts=get_questions()
     qts.each(function(){
-        $(this.style.visibility!="hidden"&&this.style.display!="none"&&$(this).is(":visible"))
-        visible_count++
+        if(this.style.visibility!="hidden"&&this.style.display!="none"&&$(this).is(":visible")){
+            visible_count++
+        }
+        
     })
     if(visible_count<3)
     {
+        log("auto scroll! visible count:"+visible_count)
         let tmp=$("html").get(0).scrollTop
-        $("html").get(0).scrollTop = 0
+        $("html").get(0).scrollTop = -1
         $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
         $("html").get(0).scrollTop=tmp
     }
@@ -258,16 +261,16 @@ function add_block(ele) {
     }
 
     log("已隐藏用户问题:" + usr.text())
-
-    //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-    if (filling_blocks_count < 5) {
-        filling_blocks_count++
-        ele.style.visibility = "hidden"
-        $("body").after($(ele).detach())
-    }
-    else {
-        ele.style.display = "none"
-    }
+    ele.style.display = "none"
+    // //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
+    // if (filling_blocks_count < 5) {
+    //     filling_blocks_count++
+    //     ele.style.visibility = "hidden"
+    //     $("body").after($(ele).detach())
+    // }
+    // else {
+        
+    // }
 
 }
 

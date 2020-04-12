@@ -18,7 +18,7 @@ result = String.raw`
 // ==UserScript==
 // @name         HinativeTool
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.43
 // @description  Handy Hinative tool!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
