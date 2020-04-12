@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         HinativeTool
 // @namespace    http://tampermonkey.net/
-// @version      0.2.43
+// @version      0.2.50
 // @description  Handy Hinative tool!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
@@ -290,6 +290,7 @@ function process_scroll() {
         if(this.style.visibility!="hidden"&&this.style.display!="none"&&$(this).is(":visible")){
             visible_count++
         }
+        
     })
     if(visible_count<3)
     {

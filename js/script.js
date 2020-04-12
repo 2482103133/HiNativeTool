@@ -46,9 +46,12 @@ function process_scroll() {
     {
         log("auto scroll! visible count:"+visible_count)
         let tmp=$("html").get(0).scrollTop
-        $("html").get(0).scrollTop = -1
+        var div=$("<div style='display:block;height:"+window.innerHeight+"px;width:20px'>神奇的伸缩棒</div>")
+        $("body").append(div)
+        $("html").get(0).scrollTop = 0
         $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
         $("html").get(0).scrollTop=tmp
+        div.remove()
     }
 }
 
