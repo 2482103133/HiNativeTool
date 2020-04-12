@@ -30,7 +30,9 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "validity_duration": 7,
     "blocked_users": [],
     "result_buffer": {},
-    "white_list": []
+    "white_list": [],
+    "self_name":(()=>{})(),
+    "blocked_quesions":{},
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){

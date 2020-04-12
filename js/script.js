@@ -34,28 +34,54 @@ $(document).ready(function () {
     // mode.AddPopup()
 })
 
-
-
 //主要的执行过程
 function handler() {
+
     if ($(".d_block").length == last_blocks_count) {
         //每两百毫秒执行一次,判断是否需要新的查询
         return
     }
+
     if (blocking) {
         log("blokcing")
         return
     }
+
     //阻塞标示，以免两个interval同时运行，造成多次paint
     blocking = true
     last_blocks_count = $(".d_block").length
 
     try {
+        //得到自身信息
+        (function get_self_username(){
+
+            if(typeof self_name==="undefined")
+            {
+                let p_url=$(".spec_nav_profile>a").get(0).href
+                let req=new XMLHttpRequest()
+                req.open("GET",p_url,false)
+                req.send()
+                let name=to_jq(req.responseText).find(".owner_name>span").text().trim()
+                storage.set({"self_name":name})
+                storage.set({"self_url":p_url})
+                log("get self name:"+name+" self url:"+p_url)
+            }
+
+        })()
+
         //遍历每个回答
         $(".d_block").each(function () {
             let href = $(this).attr("href")
             let b_block = $(this).get(0)
             let usr = jq_must_find(this,".username").text()
+
+            //如果该问题已经被屏蔽,就不用画
+            if(blocked_quesions[href])
+            {
+                log("blocked question:"+href)
+                add_block(b_block)
+                return
+            }
 
             //如果是屏蔽用户则不用画
             if (!check_block(b_block)) {
@@ -74,8 +100,11 @@ function handler() {
                 log("usr not in buffer:" + usr)
             }
             else if (!(typeof validity_duration === "undefined")) {
+
                 let duration = (new Date().getTime() - result_buffer[usr].time) / (86400*1000)
+
                 log("validity_duration:" + validity_duration + "duration:" + duration)
+                //判断数据是否过期,单位为天
                 if (duration >= validity_duration) {
                     log(usr+" data expired!")
                 } else {
@@ -89,11 +118,36 @@ function handler() {
             //发送请求
             let oReq = new XMLHttpRequest();
             oReq.addEventListener("load", function (evt) {
+                let q_url=href
 
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
+                let block=b_block
+                //判断是不是选择型问题
+                if(page.find(".box_question_choice").length>0)
+                {
+                    let c_url=q_url+"/choice_result"
+                    let c_req = new XMLHttpRequest();
+                    let usr1=usr
+                    c_req.open("GET",c_url,false)
+                    c_req.send()
+
+                    //如果已经投过票了,则跳过这个问题
+                    if(c_req.responseText.indexOf(self_name)>-1)
+                    {
+                        log("skip quesion because usr has selected")
+                        add_block(block)
+                        blocked_quesions[q_url]=true
+                        storage.set({"blocked_quesions":blocked_quesions})
+                        return
+                    }
+                }
+
                 let wrp = $(page.find(".chat_content_wrapper").get(0))
+                //https://hinative.com/en-US/questions/15939889/choice_result
+
+
                 //获得用户profileurl
                 let p_url = wrp.find("a").get(0).href
                 let usr1 = usr
@@ -185,6 +239,34 @@ function block_user(user_name, auto_blocked = true) {
     storage.set({ "blocked_users": clone })
 }
 
+//将block屏蔽掉
+function add_block(ele)
+{
+    let usr=jq_must_find(ele,".username")
+
+    //如果用户被屏蔽，则隐藏这个提问
+    blocked_blocks.add(ele)
+
+    if ($("#blocked_blocks").length == 0)
+        $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
+    else {
+        $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
+    }
+
+    log("已隐藏用户问题:" + usr.text())
+
+    //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
+    if (filling_blocks_count < 5) {
+        filling_blocks_count++
+        ele.style.visibility = "hidden"
+        $("body").after($(ele).detach())
+    }
+    else {
+        ele.style.display = "none"
+    }
+
+}
+
 //添加用户到白名单
 function add_white_list(user_name) {
     white_list.push(user_name)
@@ -269,6 +351,7 @@ function do_painting(ele) {
     //自动屏蔽
     if (is_auto_blocked && auto_block)
         block_user(usr.text())
+        
     let in_white_list = white_list.indexOf(usr.text()) != -1
     //添加屏蔽选项
     let a = null
@@ -334,7 +417,7 @@ function do_featrued_painting(ele) {
     return true
 
 }
-//判断是否块块是否需要重绘
+//判断是否块块是否好好的,需要被屏蔽
 function check_block(ele, why) {
 
     //如果已经屏蔽，则不用画了
@@ -348,26 +431,8 @@ function check_block(ele, why) {
     }
 
     if (blocked_users.indexOf(usr.text()) > -1) {
-        //如果用户被屏蔽，则隐藏这个提问
-        blocked_blocks.add(ele)
-
-        if ($("#blocked_blocks").length == 0)
-            $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
-        else {
-            $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
-        }
-
-        log("已隐藏用户问题:" + usr.text())
-
-        //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-        if (filling_blocks_count < 5) {
-            filling_blocks_count++
-            ele.style.visibility = "hidden"
-            $("body").after($(ele).detach())
-        }
-        else {
-            ele.style.display = "none"
-        }
+        
+        add_block(ele)
         return false
     }
 

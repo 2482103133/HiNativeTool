@@ -32,25 +32,19 @@ set_binding("cache_new_users", $("#cache_new_users").get(0))
 set_binding("block_rate_below", $("#block_rate_below").get(0))
 set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
+set_binding("self_name", $("#username").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
-
 }
 
-
-
 function binding_list(key, tbody) {
-
     ((key, tbody) => {
         let list = []
 
         storage.get([key], function (rslt) {
 
             list = typeof rslt[key] === "undefined" ? [] : rslt[key]
-
             show_list()
-            
-
             function remove_block(username) {
                 while (list.indexOf(username) > -1) {
                     list.splice(list.indexOf(username), 1)
