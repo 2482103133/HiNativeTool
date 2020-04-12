@@ -318,7 +318,7 @@ function do_featrued_painting(ele) {
     wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "NO ANSWERS") + "</span>")
     if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
-        jq_must_find(ele,".rate_badge").css("background-color", "red")
+        jq_must_find(ele,".rate_badge",false).css("background-color", "red")
         if (auto_block) {
             block_user(usr.text())
             check_block(ele)
@@ -328,7 +328,7 @@ function do_featrued_painting(ele) {
 
     //采纳率大于0.6则标绿
     if (rate > 0.6) {
-        jq_must_find(ele,".rate_badge").css("background-color", "green")
+        jq_must_find(ele,".rate_badge",false).css("background-color", "green")
     }
 
     return true
@@ -483,11 +483,11 @@ function to_jq(html_text) {
     return page
 }
 
-function jq_must_find(ele,selector){
+function jq_must_find(ele,selector,force=true){
     let find=$(ele).find(selector)
-    if(find.length==0)
+    if(force&&find.length==0)
     {
-        alert("未能找到关键样式:"+selector," 请联系作者解决!,程序将被暂停运行~~")
+        alert("未能找到关键样式:"+selector+" 请联系作者解决!,程序将被暂停运行~~")
         extension_enabled=false
     }
     return find
