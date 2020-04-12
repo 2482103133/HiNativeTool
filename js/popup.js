@@ -108,10 +108,6 @@ function set_binding(key1, check1) {
             }
         })()
         
-
-        mode.ExecuteScript({
-            code: key + '=' + value
-        }, () => chrome.runtime.lastError);
         let obj = {}
         obj[key] = value
         storage.set(obj)

@@ -58,9 +58,7 @@ function handler() {
             if(typeof self_name==="undefined")
             {
                 let p_url=$(".spec_nav_profile>a").get(0).href
-                let req=new XMLHttpRequest()
-                req.open("GET",p_url,false)
-                req.send()
+                let req=request_get(p_url,null,false)
                 let name=to_jq(req.responseText).find(".owner_name>span").text().trim()
                 storage.set({"self_name":name})
                 storage.set({"self_url":p_url})
@@ -116,8 +114,7 @@ function handler() {
             }
 
             //发送请求
-            let oReq = new XMLHttpRequest();
-            oReq.addEventListener("load", function (evt) {
+            request_get(href,function (evt) {
                 let q_url=href
 
                 //得到用户页面
@@ -128,11 +125,7 @@ function handler() {
                 if(page.find(".box_question_choice").length>0)
                 {
                     let c_url=q_url+"/choice_result"
-                    let c_req = new XMLHttpRequest();
-                    let usr1=usr
-                    c_req.open("GET",c_url,false)
-                    c_req.send()
-
+                    let c_req = request_get(c_url,null,false);
                     //如果已经投过票了,则跳过这个问题
                     if(c_req.responseText.indexOf(self_name)>-1)
                     {
@@ -189,10 +182,7 @@ function handler() {
                     }
                 })
 
-            });
-
-            oReq.open("GET", href);
-            oReq.send();
+            })
         })
 
     } finally {
@@ -453,15 +443,12 @@ function get_user_info(p_url, usr) {
     let p_url1 = p_url
     let usr1 = usr
     return new Promise(resolve => {
-        let req = new XMLHttpRequest();
-        req.addEventListener("load", function (evt1) {
+        request_get(p_url,function (evt1) {
             let txt = evt1.srcElement.response
             let buffer = { info: get_paint_info(txt), profile_url: p_url1, usr: usr1, time: new Date().getTime() }
             resolve(buffer)
             return
         })
-        req.open("GET", p_url);
-        req.send()
     })
 }
 
@@ -474,10 +461,9 @@ function get_user_feartured_answer(p_url, buffer) {
         //第一回答页面
         //在这里获得采纳的回答数
         let q_url = p_url1 + "/questions"
-        let req = new XMLHttpRequest();
 
         //请求该用户的提问页，用于得到问题的采纳率
-        req.addEventListener("load", function (evt) {
+        request_get(q_url, function (evt) {
 
             let qtxt = evt.srcElement.response
             let page = to_jq(qtxt)
@@ -501,10 +487,9 @@ function get_user_feartured_answer(p_url, buffer) {
 
                 blocks_count++;
                 let fq_url = this.href
-                let req = new XMLHttpRequest();
 
                 //请求某一个问题的页面
-                req.addEventListener("load", function (evt) {
+                request_get(fq_url, function (evt) {
                     // let buffer = result_buffer[usr1]
                     let qtxt1 = evt.srcElement.response
                     if (typeof buffer.featured_answers === "undefined") {
@@ -530,14 +515,8 @@ function get_user_feartured_answer(p_url, buffer) {
                     }
                 })
 
-                req.open("GET", fq_url);
-                req.send();
-
             })
         })
-
-        req.open("GET", q_url);
-        req.send();
     })
 
 }
@@ -556,6 +535,15 @@ function jq_must_find(ele,selector,force=true){
         extension_enabled=false
     }
     return find
+}
+
+function request_get(url,callback,async=true){
+    let req=new XMLHttpRequest()
+    if(callback)
+    req.addEventListener("load",callback)
+    req.open("GET",url,async)
+    req.send()
+    return req
 }
 
 //更新缓存
