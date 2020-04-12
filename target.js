@@ -142,8 +142,6 @@ function log(obj) {
   if (show_log)
       console.log(obj)
 }
-
-
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -305,7 +303,7 @@ function handler() {
         $(".d_block").each(function () {
             let href = $(this).attr("href")
             let b_block = $(this).get(0)
-            let usr = $(this).find(".username").text()
+            let usr = jq_must_find(this,".username").text()
 
             //如果是屏蔽用户则不用画
             if (!check_block(b_block)) {
@@ -372,7 +370,7 @@ function handler() {
                             //将所有同名的block都加上rate
                             $(".d_block").each(function () {
                                 if (this.featrued_painted != true) {
-                                    let a_usr = $(this).find(".username")
+                                    let a_usr = jq_must_find(this,".username")
                                     if (a_usr.text() == buffer.usr) {
                                         do_featrued_painting(this)
                                     }
@@ -468,8 +466,8 @@ function do_painting(ele) {
 
     //设置一个painted属性
     ele.painted = true
-    let usr = $(ele).find(".username")
-    let wrp = $(ele).find(".username_wrapper")
+    let usr = jq_must_find(ele,".username")
+    let wrp = jq_must_find(ele,".username_wrapper")
     let buffer = result_buffer[usr.text()]
     let info = buffer.info
 
@@ -557,8 +555,8 @@ function do_painting(ele) {
 //添加采纳率
 function do_featrued_painting(ele) {
     ele.featrued_painted = true
-    let usr = $(ele).find(".username")
-    let wrp = $(ele).find(".username_wrapper")
+    let usr = jq_must_find(ele,".username")
+    let wrp = jq_must_find(ele,".username_wrapper")
     // log("result_buffer[" + usr.text() + "]:")
     // log(result_buffer[usr.text()])
     let a = result_buffer[usr.text()].answers
@@ -568,7 +566,7 @@ function do_featrued_painting(ele) {
     wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "NO ANSWERS") + "</span>")
     if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
-        $(ele).find(".rate_badge").css("background-color", "red")
+        jq_must_find(ele,".rate_badge").css("background-color", "red")
         if (auto_block) {
             block_user(usr.text())
             check_block(ele)
@@ -578,7 +576,7 @@ function do_featrued_painting(ele) {
 
     //采纳率大于0.6则标绿
     if (rate > 0.6) {
-        $(ele).find(".rate_badge").css("background-color", "green")
+        jq_must_find(ele,".rate_badge").css("background-color", "green")
     }
 
     return true
@@ -591,7 +589,7 @@ function check_block(ele, why) {
     if (blocked_blocks.has(ele))
         return false
 
-    let usr = $(ele).find(".username")
+    let usr = jq_must_find(ele,".username")
     //如果在白名单里则不必屏蔽
     if (white_list.indexOf(usr.text()) >= 0) {
         return true
@@ -625,8 +623,9 @@ function check_block(ele, why) {
 }
 
 function each_user_blocks(username, handler) {
+    
     $(".d_block").each(function () {
-        if ($(this).find(".username").text() == username) {
+        if (jq_must_find(this,".username").text() == username) {
             handler.call(this)
         }
     })
@@ -673,11 +672,13 @@ function get_user_feartured_answer(p_url, buffer) {
             //初始化总的有回复的提问数
             buffer.answers = 0
             blocks.each(function () {
-                let badge = $($(this).find(".badge").get(0)).text().trim()
-                //log("usr:" + usr + " badge:" + badge)
+              
+                
+                let badge = $(jq_must_find(this,".badge_item").get(0)).text().trim()
+                log("usr-question:" + buffer.usr + " badge:" + badge)
                 //如果无人回答则不计入
                 if (badge == "0") {
-                    //log("skipped quesition")
+                    // log("skipped quesition")
                     return
                 }
 
@@ -728,6 +729,16 @@ function to_jq(html_text) {
     let html = $.parseHTML(qtxt)
     let page = $("<div>").append(html)
     return page
+}
+
+function jq_must_find(ele,selector){
+    let find=$(ele).find(selector)
+    if(find.length==0)
+    {
+        alert("未能找到关键样式:"+selector," 请联系作者解决!,程序将被暂停运行~~")
+        extension_enabled=false
+    }
+    return find
 }
 
 //更新缓存
@@ -877,8 +888,6 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
 </body>
 </html></div>`
 s.append(window.popuphtml)
-
-
 function setup_popup(){
 //清空缓存的用户数据
 $("#cached").click(function () {
@@ -891,7 +900,6 @@ $("#update").click(function () {
 
 //设置title为value
 $("#block_rate_below").change(function () {
-    
     this.title = $(this).val()
 })
 
@@ -916,6 +924,7 @@ set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
+
 }
 
 

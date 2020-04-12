@@ -104,4 +104,3 @@ function log(obj) {
   if (show_log)
       console.log(obj)
 }
-
