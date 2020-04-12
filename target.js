@@ -292,12 +292,13 @@ function process_scroll() {
         }
         
     })
-    if(visible_count<3)
+    if($("html").get(0).getClientRects().height<=window.innerHeight<3)
     {
         log("auto scroll! visible count:"+visible_count)
         let tmp=$("html").get(0).scrollTop
         var div=$("<div style='display:block;height:"+window.innerHeight+"px;width:20px'>神奇的伸缩棒</div>")
         $("body").append(div)
+        
         $("html").get(0).scrollTop = 0
         $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
         $("html").get(0).scrollTop=tmp
