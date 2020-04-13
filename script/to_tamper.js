@@ -1,8 +1,11 @@
+
+/* 
+    这个文件用于将项目导出成Tampermonkey脚本
+*/
 const base_url = ".."
 const fs = require('fs')
 const btoa = require('../node_modules/btoa')
 const minify = require('./node_modules/html-minifier').minify;
-
 
 jsdom = require("./node_modules/jsdom");
 const { JSDOM } = jsdom;
@@ -14,13 +17,15 @@ $ = jQuery = require('./node_modules/jquery')(window);
 popup_uri = "html/popup.html"
 js = []
 requires = []
+let config=JSON.parse(fs.readFileSync("manifest.json","utf8"))
+
 result = String.raw`
 // ==UserScript==
-// @name         HinativeTool
+// @name         ${config["name"]}
 // @namespace    http://tampermonkey.net/
-// @version      0.2.50
-// @description  Handy Hinative tool!
-// @author       Collen Zhou
+// @version      ${config["version"]}
+// @description  ${config["description"]}
+// @author       ${config["author"]}
 // @match        *://hinative.com/*
 // @grant        unsafeWindow
 // @grant        GM_getValue
@@ -55,8 +60,8 @@ result = String.raw`
 `
 console.log(process.cwd())
 function generate() {
-    let to_url = "target.js"
-    fs.writeFileSync("tmp.txt", include_scripts(popup_uri))
+    let to_url = "tmp/tampermonkey-adaption.js"
+    fs.writeFileSync("tmp/tmp.txt", include_scripts(popup_uri))
     result += inject("js/common.js")
     result += inject("js/background.js")
     result += inject("js/script.js")
@@ -68,7 +73,6 @@ function generate() {
     $('#popup').hide()
     })();
 `
-
     fs.writeFileSync(to_url, result);
 }
 function inject(src) {
@@ -88,8 +92,6 @@ function pac_sript_tag(src, tag = "script", type = "text/javascript") {
 }
 
 function pack_to_data_url(src, type) {
-    btoa
-    
     // return URL.createObjectURL(fs.readFileSync(src, "utf-8"))
     // return "data:"+type+"," + encodeURI(fs.readFileSync(src, "utf-8"))
     return "data:" + type + ",base64," + btoa(fs.readFileSync(src, "utf-8"))
@@ -115,9 +117,5 @@ function include_scripts(html_src) {
     return result
 }
 
-function read_as_variable(src, name) {
-    const data = fs.readFileSync(src, 'utf8')
-    return name + "=`" + data + "`"
-}
-
 generate()
+

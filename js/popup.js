@@ -107,7 +107,7 @@ function set_binding(key1, check1) {
                     return $(check).val()
             }
         })()
-        
+        set_variable(key,value)
         let obj = {}
         obj[key] = value
         storage.set(obj)

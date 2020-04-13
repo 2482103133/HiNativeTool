@@ -1,7 +1,8 @@
 {
-  "name": "Hinative",
-  "version": "1.2.1",
+  "name": "HiNativeTool",
+  "version": "1.2.51",
   "description": "Handy Hinative tool!!",
+  "author":"Collen Zhou",
   "offline_enabled": true,
   "permissions": [
     "activeTab",

@@ -1,9 +1,9 @@
 
 // ==UserScript==
-// @name         HinativeTool
+// @name         HiNativeTool
 // @namespace    http://tampermonkey.net/
-// @version      0.2.50
-// @description  Handy Hinative tool!
+// @version      1.2.51
+// @description  Handy Hinative tool!!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
 // @grant        unsafeWindow
@@ -142,6 +142,74 @@ function log(obj) {
   if (show_log)
       console.log(obj)
 }
+
+
+//执行一个字典里所有的脚本，并在所有脚本都执行完后调用resolve
+function preload(dict) {
+  let len = Object.keys(dict).length
+  let count = 0;
+  return new Promise(resolve=>{
+    for (let key in dict) {
+      if (dict.hasOwnProperty(key)) {
+        let val = dict[key];
+        let key1 = key
+         add_script_value(key1, val).then(function () {
+          if (++count == len) {
+            resolve()
+          }
+        })
+      }
+    }
+  })
+}
+
+//添加一个页面变量值，如果不存在则创建并设置默认值
+function add_script_value(key1, dflt1) {
+  let key = key1
+  let dflt = dflt1
+  return new Promise(resolve => {
+    storage.get([key], function (result) {
+      
+      if (typeof result[key] == "undefined") {
+        let obj = {}
+        obj[key] = dflt
+        
+        // storage.set(obj)
+        result[key] = dflt
+      }
+
+      set_variable(key,result[key]).then(function () {
+        resolve()
+      });
+      
+    });
+  })
+}
+
+function set_variable(key,value)
+{
+  let code = "window."+key + ' = ' +JSON.stringify(value)
+      
+  return execute_script(code);
+}
+
+
+
+//执行一个脚本返回resolve
+function execute_script(script) {
+  let script1=script
+  return new Promise(resolve=>{
+    mode.ExecuteScript({
+      code: script1
+    },()=>{
+      
+      let e=chrome.runtime.lastError 
+      resolve()
+    })
+  })
+}
+
+
 // Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -185,69 +253,6 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
   })
 })
 
-//执行一个字典里所有的脚本，并在所有脚本都执行完后调用resolve
-function preload(dict) {
-  let len = Object.keys(dict).length
-  let count = 0;
-  return new Promise(resolve=>{
-    for (let key in dict) {
-      if (dict.hasOwnProperty(key)) {
-        let val = dict[key];
-        let key1 = key
-         add_script_value(key1, val).then(function () {
-          if (++count == len) {
-            resolve()
-          }
-        })
-      }
-    }
-  })
-}
-
-//添加一个页面变量值，如果不存在则创建并设置默认值
-function add_script_value(key1, dflt1) {
-  let key = key1
-  let dflt = dflt1
-  return new Promise(resolve => {
-    storage.get([key], function (result) {
-      
-      
-
-      if (typeof result[key] == "undefined") {
-        let obj = {}
-        obj[key] = dflt
-        
-        // storage.set(obj)
-        result[key] = dflt
-      }
-
-      let code = "window."+key + ' = ' +JSON.stringify(result[key])
-      
-      execute_script(code).then(function () {
-        resolve()
-      });
-     
-    });
-  })
-}
-
-
-
-//执行一个脚本返回resolve
-function execute_script(script) {
-  let script1=script
-  return new Promise(resolve=>{
-    mode.ExecuteScript({
-      code: script1
-    },()=>{
-      
-      let e=chrome.runtime.lastError 
-      resolve()
-    })
-  })
-}
-
-
 $(document).ready(function () {
     // https://hinative.com/en-US 只监听qeustions路径
     if (!window.location.pathname.match(/^\/[^\/]*$/))
@@ -271,6 +276,12 @@ $(document).ready(function () {
     window.blocked_blocks = new Set()
     //已经用于填充的问题块数
     window.filling_blocks_count = 0
+    //存放请求的队列
+    window.request_queue = []
+    //请求最小间隔，以免给hinative服务器造成负担
+    window.request_interval = 500
+    //开启请求循环
+    start_request_interval()
 
     //监听blocks变化
     setInterval(() => {
@@ -281,32 +292,33 @@ $(document).ready(function () {
     }, 200);
 
     $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
-
 })
+
+//自动下拉以刷新提问
 function process_scroll() {
-    let visible_count=0
-    let qts=get_questions()
-    qts.each(function(){
-        if(this.style.visibility!="hidden"&&this.style.display!="none"&&$(this).is(":visible")){
+    let visible_count = 0
+    let qts = get_questions()
+    qts.each(function () {
+        if (this.style.visibility != "hidden" && this.style.display != "none" && $(this).is(":visible")) {
             visible_count++
         }
-        
+
     })
-    if($("html").get(0).getClientRects().height<=window.innerHeight<3)
-    {
-        log("auto scroll! visible count:"+visible_count)
-        let tmp=$("html").get(0).scrollTop
-        var div=$("<div style='display:block;height:"+window.innerHeight+"px;width:20px'>神奇的伸缩棒</div>")
+    if ($("html").get(0).getClientRects().height <= window.innerHeight < 3) {
+        // log("auto scroll! visible count:" + visible_count)
+        let tmp = $("html").get(0).scrollTop
+        var div = $("<div style='display:block;height:" + window.innerHeight + "px;width:20px'>神奇的伸缩棒</div>")
         $("body").append(div)
-        
+
         $("html").get(0).scrollTop = 0
         $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
-        $("html").get(0).scrollTop=tmp
+        $("html").get(0).scrollTop = tmp
         div.remove()
     }
 }
 
-function get_questions(){
+//获得所有问题块
+function get_questions() {
     return $(".d_block")
 }
 
@@ -366,13 +378,30 @@ function process_blocking() {
                 return
             }
 
+            let block = b_block
+
+             //判断是不是选择型问题
+             if ($(block).find("*:contains('does this sound natural')").length > 0) {
+                 log("natural question")
+               
+                let c_url = href + "/choice_result"
+                let c_req = request_get(c_url, null, false);
+                //如果已经投过票了,则跳过这个问题
+                if (c_req.responseText.indexOf(self_name) > -1) {
+                    log("skip quesion because usr has selected")
+                    add_block(block)
+                    blocked_quesions[href] = true
+                    storage.set({ "blocked_quesions": blocked_quesions })
+                    return
+                }
+             }
+
             //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
             if (typeof result_buffer[usr] === "undefined") {
                 //没有加载过就继续
                 log("usr not in buffer:" + usr)
             }
             else if (!(typeof validity_duration === "undefined")) {
-
                 let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
 
                 log("validity_duration:" + validity_duration + "duration:" + duration)
@@ -387,6 +416,9 @@ function process_blocking() {
                 }
             }
 
+            
+
+
             //发送请求
             request_get(href, function (evt) {
                 let q_url = href
@@ -394,20 +426,8 @@ function process_blocking() {
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
-                let block = b_block
-                //判断是不是选择型问题
-                if (page.find(".box_question_choice").length > 0) {
-                    let c_url = q_url + "/choice_result"
-                    let c_req = request_get(c_url, null, false);
-                    //如果已经投过票了,则跳过这个问题
-                    if (c_req.responseText.indexOf(self_name) > -1) {
-                        log("skip quesion because usr has selected")
-                        add_block(block)
-                        blocked_quesions[q_url] = true
-                        storage.set({ "blocked_quesions": blocked_quesions })
-                        return
-                    }
-                }
+                
+               
 
                 let wrp = $(page.find(".chat_content_wrapper").get(0))
                 //https://hinative.com/en-US/questions/15939889/choice_result
@@ -462,6 +482,7 @@ function process_blocking() {
     }
 }
 
+//更新缓存到本地
 function update_result_buffer() {
     let clone = result_buffer
     //如果选择不缓冲新人，则不将新人数据上传
@@ -516,16 +537,6 @@ function add_block(ele) {
 
     log("已隐藏用户问题:" + usr.text())
     ele.style.display = "none"
-    // //把隐藏的blocks作为填充放在main后以便翻滚加载新提问
-    // if (filling_blocks_count < 5) {
-    //     filling_blocks_count++
-    //     ele.style.visibility = "hidden"
-    //     $("body").after($(ele).detach())
-    // }
-    // else {
-        
-    // }
-
 }
 
 //添加用户到白名单
@@ -533,9 +544,7 @@ function add_white_list(user_name) {
     white_list.push(user_name)
     storage.set({ "white_list": Array.from(new Set(white_list)) })
 }
-
-
-
+//获得绘制基本信息
 function get_paint_info(txt) {
 
     //获得反应率以及其他信息
@@ -640,8 +649,8 @@ function do_painting(ele) {
         //将用户的问题去除白名单和黑名单选项
         each_user_blocks(usr.text(), function () {
             $(this).find(".block").remove()
+            $(this).find(".white").text("💗")
         })
-        a.text("💗")
     })
     wrp.append(a)
 
@@ -699,7 +708,7 @@ function check_block(ele, why) {
 
     return true
 }
-
+//便遍历某个username的所有blocks
 function each_user_blocks(username, handler) {
 
     get_questions().each(function () {
@@ -727,70 +736,86 @@ function get_user_info(p_url, usr) {
 function get_user_feartured_answer(p_url, buffer) {
     let buffer1 = buffer
     let p_url1 = p_url
+    let page_count = 2
     return new Promise(resolve => {
+
         let buffer = buffer1
         //第一回答页面
         //在这里获得采纳的回答数
         let q_url = p_url1 + "/questions"
+        let blocks_count = 0
 
-        //请求该用户的提问页，用于得到问题的采纳率
-        request_get(q_url, function (evt) {
-
-            let qtxt = evt.srcElement.response
-            let page = to_jq(qtxt)
-
-            //获得第一页回答的问题
-            let blocks = page.find(".d_block")
-            let blocks_count = 0
-
-            //初始化总的有回复的提问数
+        if (typeof buffer.featured_answers === "undefined") {
+            buffer.featured_answers = 0
+        }
+        if (typeof buffer.answers === "undefined") {
             buffer.answers = 0
-            blocks.each(function () {
+        }
+        let current_page = 0
+        for (let current_page = 0; current_page < page_count; current_page++) {
+            request_page(current_page)
+        }
+        function request_page(index) {
+            let q_url1 = q_url
+            if (index > 0) {
+                q_url1 = q_url + '?page=' + (index + 1)
+            }
+            log("usr:" + buffer.usr + " page:" + q_url1)
+            //请求该用户的提问页，用于得到问题的采纳率
+            request_get(q_url1, function (evt) {
 
+                let qtxt = evt.srcElement.response
+                let page = to_jq(qtxt)
+                //获得第一页回答的问题
+                let blocks = page.find(".d_block")
 
-                let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim()
-                log("usr-question:" + buffer.usr + " badge:" + badge)
-                //如果无人回答则不计入
-                if (badge == "0") {
-                    // log("skipped quesition")
-                    return
+                //最后一页了,则取消继续查询
+                if (blocks.length == 0) {
+                    page_count = 0
                 }
 
-                blocks_count++;
-                let fq_url = this.href
-
-                //请求某一个问题的页面
-                request_get(fq_url, function (evt) {
-                    // let buffer = result_buffer[usr1]
-                    let qtxt1 = evt.srcElement.response
-                    if (typeof buffer.featured_answers === "undefined") {
-                        buffer.featured_answers = 0
-                    }
-                    //该问题已被采纳
-                    if (qtxt1.indexOf("featured_answer_label") > -1) {
-                        buffer.featured_answers++
-                    }
-                    else {
-                        //未被采纳
-                    }
-
-                    buffer.answers++
-
-                    //当所有的问题都加载完，统计结果，并添加到缓存中
-                    if (blocks_count == buffer.answers) {
-                        //更新时间
-                        buffer.time = new Date().getTime()
-                        log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-                        resolve(buffer)
+                //初始化总的有回复的提问数
+                blocks.each(function () {
+                    let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim()
+                    log("usr-question:" + buffer.usr + " badge:" + badge)
+                    //如果无人回答则不计入
+                    if (badge == "0") {
+                        // log("skipped quesition")
                         return
                     }
-                })
+                    blocks_count++;
+                    let fq_url = this.href
 
+                    //请求某一个问题的页面
+                    request_get(fq_url, function (evt) {
+                        let qtxt1 = evt.srcElement.response
+                        //该问题已被采纳
+                        if (qtxt1.indexOf("featured_answer_label") > -1) {
+                            buffer.featured_answers++
+                        }
+                        else {
+                            //未被采纳
+                        }
+                        buffer.answers++
+                        // log("usr:" + buffer.usr + " index:" + index + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                        //当所有的问题都加载完，统计结果，并添加到缓存中
+                        if (blocks_count == buffer.answers && index >= (page_count - 1)) {
+                            //更新时间
+                            buffer.time = new Date().getTime()
+                            log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                            resolve(buffer)
+                            return
+                        }
+                    })
+
+                })
             })
-        })
+        }
+
     })
 
 }
+// 将文本转化为jqnodes
 function to_jq(html_text) {
     let qtxt = html_text
     let html = $.parseHTML(qtxt)
@@ -798,6 +823,7 @@ function to_jq(html_text) {
     return page
 }
 
+//在一个元素中查找关键selector,如果不存在则报错
 function jq_must_find(ele, selector, force = true) {
     let find = $(ele).find(selector)
     if (force && find.length == 0) {
@@ -807,13 +833,31 @@ function jq_must_find(ele, selector, force = true) {
     return find
 }
 
+
+//发送一次get请求
 function request_get(url, callback, async = true) {
     let req = new XMLHttpRequest()
     if (callback)
         req.addEventListener("load", callback)
     req.open("GET", url, async)
-    req.send()
+    // req.setRequestHeader('User-Agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36')
+
+    if (async)
+        request_queue.push(req)
+    else {
+        req.send()
+    }
     return req
+}
+
+function start_request_interval() {
+    //每秒一次请求
+    setInterval(function () {
+        if (request_queue.length > 0) {
+            var req = request_queue.shift()
+            req.send()
+        }
+    }, request_interval)
 }
 
 //更新缓存
@@ -828,10 +872,7 @@ function update_cache() {
             log("count:" + count)
             log("result_buffer:")
             log(result_buffer)
-
             for (const usr in result_buffer) {
-
-
                 let p_url = result_buffer[usr].profile_url
                 let usr1 = usr
                 get_user_info(p_url, usr1).then(function (buffer1) {
@@ -842,21 +883,19 @@ function update_cache() {
 
                     if (need_featured_answer == true) {
                         get_user_feartured_answer(p_url, buffer2).then(function (buffer3) {
-                            // let buffer = buffer
-                            log("featrued loaded:")
-                            log(buffer3)
                             result_buffer[buffer3.usr] = buffer3
 
                             if (++resolved == count)
                                 resolve(result_buffer)
-                            log("resolved:" + resolved)
+                            log(buffer3.usr+"data updated:" + resolved +" left:"+(count-resolved))
                         })
                     } else {
                         result_buffer[buffer1.usr] = buffer1
                         if (++resolved == count)
                             resolve(result_buffer)
-                        log("resolved:" + resolved)
+                        log("resolved:" + resolved +" left:"+(count-resolved))
                     }
+
                 })
 
             }
@@ -865,7 +904,7 @@ function update_cache() {
     }).then(rb => {
         log("resovled buffer:")
         log(rb)
-
+        update_result_buffer();
         alert("用户信息更新完成！")
     })
 }
@@ -1083,7 +1122,7 @@ function set_binding(key1, check1) {
                     return $(check).val()
             }
         })()
-        
+        set_variable(key,value)
         let obj = {}
         obj[key] = value
         storage.set(obj)
@@ -1102,6 +1141,9 @@ function popup_update_cache() {
         code: "update_cache()"
     }, () => chrome.runtime.lastError);
 }
+
+
+
 
     $('#popup').hide()
     })();
