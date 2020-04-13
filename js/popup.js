@@ -33,6 +33,7 @@ set_binding("block_rate_below", $("#block_rate_below").get(0))
 set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 set_binding("self_name", $("#username").get(0))
+set_binding("request_interval", $("#request_interval").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
 }

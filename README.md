@@ -2,6 +2,7 @@
 一个基于JavaScript的Chrome Extension.   
 __已添加TamperMonkey插件支持!__  
 [Github项目地址](https://github.com/2482103133/HiNative-Chrome-Extension)  
+[TamperMonkey地址](https://greasyfork.org/en/scripts/400206-hinativetool)  
 ### 主要实现功能:  
 1. 根据提问者的响应率(由官方提供的笑脸,愁脸使用的class name得到)来让问题背景用不同颜色显示,如红色代表这是一个低回复率的提问者所提的问题,而没有颜色代表是新人  
 1. 显示提问者的回答数和问题数  

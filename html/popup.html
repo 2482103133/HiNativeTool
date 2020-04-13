@@ -3,10 +3,40 @@
 
 <head>
   <meta charset="UTF-8">
+  <style>
+    .popup{
+      width: 400px;
+      height: 500px;
+    }
+    .option_table{
+      text-align: right;
+    }
+    .range{
+      width: 120px;
+    }
+    .numer_input{
+      text-align: right;
+      width: 120px;
+    }
+    .button{
+      border-style: outset;
+      padding: 0%;
+    }
+    .list_table_container{
+      text-align: left;
+      border-style: double;
+    }
+    .list_table{
+      display: inline-block;
+      height: 300px;
+      overflow: scroll;
+    }
+    
+  </style>
 </head>
 
-<body style="width: 400px;height: 500px;">
-  <table style="text-align: right;">
+<body class="popup">
+  <table class="option_table" >
     <thead>
       <tr>Info</tr>
     </thead>
@@ -17,7 +47,7 @@
       </tr>
     </tbody>
   </table>
-  <table style="text-align: right;">
+  <table class="option_table" >
     <thead>
       <tr>Options</tr>
     </thead>
@@ -46,48 +76,49 @@
       </tr>
       <tr>
         <td>Block rate below:</td>
-        <td><input id="block_rate_below" type="range" style="width: 120px;" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
       </tr>
       <tr>
         <td>Data validity duration(d):</td>
-        <td><input id="validity_duration" type="number" style="text-align: right;width: 120px;"  min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+      </tr>
+      <tr>
+        <td>Request interval(ms):</td>
+        <td><input id="request_interval" type="number" class="numer_input"  min="0" step="100" pattern="\d*" title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br /></td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
         <td><input id="cached" type="button" value="🚮"
             title="Clear buffered responses,you might need to re-reqeust those data!"
-            style="border-style: outset;padding: 0%;"></input><br /></td>
+           class='button'></input><br /></td>
       </tr>
       <tr>
         <td> Update chached data:</td>
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
-            style="border-style: outset;padding: 0%;"></input><br /></td>
+          class='button'></input><br /></td>
       </tr>
       <tr >
-        <td style="text-align: left;border-style: double;">
+        <td class="list_table_container" >
           <table >
             <thead>
               <tr>Blocked Users</tr>
             </thead>
-            <tbody id="blocked_users" style="display: inline-block;height: 300px;overflow: scroll;">
+            <tbody id="blocked_users" class="list_table" >
             </tbody>
           </table>
         </td>
-        <td style="text-align: left;border-style: double;">
+        <td class="list_table_container">
           <table>
             <thead>
               <tr>White List</tr>
             </thead>
-            <tbody id="white_list" style="display: inline-block;height: 300px;overflow: scroll;">
+            <tbody id="white_list" class="list_table">
             </tbody>
           </table>
         </td>
       </tr>
     </tbody>
   </table>
-  <script >
-    var i=0;
-  </script>
 
   <script src="/js/jquery-3.4.1.min.js"></script>
   <script src="/js/common.js"></script>

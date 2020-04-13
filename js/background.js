@@ -33,6 +33,7 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "white_list": [],
     "self_name":(()=>{})(),
     "blocked_quesions":{},
+    "request_interval":1000
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){

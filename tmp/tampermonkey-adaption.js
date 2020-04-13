@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         HiNativeTool
 // @namespace    http://tampermonkey.net/
-// @version      1.2.51
+// @version      1.2.71
 // @description  Handy Hinative tool!!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
@@ -245,6 +245,7 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "white_list": [],
     "self_name":(()=>{})(),
     "blocked_quesions":{},
+    "request_interval":1000
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){
@@ -279,7 +280,7 @@ $(document).ready(function () {
     //存放请求的队列
     window.request_queue = []
     //请求最小间隔，以免给hinative服务器造成负担
-    window.request_interval = 500
+    // request_interval
     //开启请求循环
     start_request_interval()
 
@@ -304,8 +305,8 @@ function process_scroll() {
         }
 
     })
-    if ($("html").get(0).getClientRects().height <= window.innerHeight < 3) {
-        // log("auto scroll! visible count:" + visible_count)
+    if ($("html").get(0).getClientRects()[0].height <= window.innerHeight) {
+        log("auto scroll! visible count:" + visible_count)
         let tmp = $("html").get(0).scrollTop
         var div = $("<div style='display:block;height:" + window.innerHeight + "px;width:20px'>神奇的伸缩棒</div>")
         $("body").append(div)
@@ -362,8 +363,7 @@ function process_blocking() {
 
             //如果该问题已经被屏蔽,就不用画
             if (blocked_quesions[href]) {
-                log("blocked question:" + href)
-                add_block(b_block)
+                add_block(b_block,false)
                 return
             }
 
@@ -382,16 +382,15 @@ function process_blocking() {
 
              //判断是不是选择型问题
              if ($(block).find("*:contains('does this sound natural')").length > 0) {
-                 log("natural question")
+            
                
                 let c_url = href + "/choice_result"
                 let c_req = request_get(c_url, null, false);
                 //如果已经投过票了,则跳过这个问题
                 if (c_req.responseText.indexOf(self_name) > -1) {
-                    log("skip quesion because usr has selected")
+                    log("usr:"+usr+" skip quesion because I have selected")
                     add_block(block)
-                    blocked_quesions[href] = true
-                    storage.set({ "blocked_quesions": blocked_quesions })
+
                     return
                 }
              }
@@ -404,9 +403,10 @@ function process_blocking() {
             else if (!(typeof validity_duration === "undefined")) {
                 let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
 
-                log("validity_duration:" + validity_duration + "duration:" + duration)
+               
                 //判断数据是否过期,单位为天
                 if (duration >= validity_duration) {
+                    log("validity_duration:" + validity_duration + "duration:" + duration)
                     log(usr + " data expired!")
                 } else {
                     //已经加载过了
@@ -523,11 +523,18 @@ function block_user(user_name, auto_blocked = true) {
 }
 
 //将block屏蔽掉
-function add_block(ele) {
+//update代表是否更新本次操作到本地
+function add_block(ele,update=true) {
     let usr = jq_must_find(ele, ".username")
 
     //如果用户被屏蔽，则隐藏这个提问
     blocked_blocks.add(ele)
+    if(update)
+    {
+        let href=$(this).attr("href")
+        blocked_quesions[href]=true
+        storage.set({ "blocked_quesions": blocked_quesions })
+    }
 
     if ($("#blocked_blocks").length == 0)
         $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
@@ -921,10 +928,40 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
 
 <head>
   <meta charset="UTF-8">
+  <style>
+    .popup{
+      width: 400px;
+      height: 500px;
+    }
+    .option_table{
+      text-align: right;
+    }
+    .range{
+      width: 120px;
+    }
+    .numer_input{
+      text-align: right;
+      width: 120px;
+    }
+    .button{
+      border-style: outset;
+      padding: 0%;
+    }
+    .list_table_container{
+      text-align: left;
+      border-style: double;
+    }
+    .list_table{
+      display: inline-block;
+      height: 300px;
+      overflow: scroll;
+    }
+    
+  </style>
 </head>
 
-<body style="width: 400px;height: 500px;">
-  <table style="text-align: right;">
+<body class="popup">
+  <table class="option_table" >
     <thead>
       <tr>Info</tr>
     </thead>
@@ -935,7 +972,7 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
       </tr>
     </tbody>
   </table>
-  <table style="text-align: right;">
+  <table class="option_table" >
     <thead>
       <tr>Options</tr>
     </thead>
@@ -964,48 +1001,49 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
       </tr>
       <tr>
         <td>Block rate below:</td>
-        <td><input id="block_rate_below" type="range" style="width: 120px;" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
       </tr>
       <tr>
         <td>Data validity duration(d):</td>
-        <td><input id="validity_duration" type="number" style="text-align: right;width: 120px;"  min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+      </tr>
+      <tr>
+        <td>Request interval(ms):</td>
+        <td><input id="request_interval" type="number" class="numer_input"  min="0" step="100" pattern="\d*" title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br /></td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
         <td><input id="cached" type="button" value="🚮"
             title="Clear buffered responses,you might need to re-reqeust those data!"
-            style="border-style: outset;padding: 0%;"></input><br /></td>
+           class='button'></input><br /></td>
       </tr>
       <tr>
         <td> Update chached data:</td>
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
-            style="border-style: outset;padding: 0%;"></input><br /></td>
+          class='button'></input><br /></td>
       </tr>
       <tr >
-        <td style="text-align: left;border-style: double;">
+        <td class="list_table_container" >
           <table >
             <thead>
               <tr>Blocked Users</tr>
             </thead>
-            <tbody id="blocked_users" style="display: inline-block;height: 300px;overflow: scroll;">
+            <tbody id="blocked_users" class="list_table" >
             </tbody>
           </table>
         </td>
-        <td style="text-align: left;border-style: double;">
+        <td class="list_table_container">
           <table>
             <thead>
               <tr>White List</tr>
             </thead>
-            <tbody id="white_list" style="display: inline-block;height: 300px;overflow: scroll;">
+            <tbody id="white_list" class="list_table">
             </tbody>
           </table>
         </td>
       </tr>
     </tbody>
   </table>
-  <script >
-    var i=0;
-  </script>
 
   <script src="/js/jquery-3.4.1.min.js"></script>
   <script src="/js/common.js"></script>
@@ -1048,6 +1086,7 @@ set_binding("block_rate_below", $("#block_rate_below").get(0))
 set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 set_binding("self_name", $("#username").get(0))
+set_binding("request_interval", $("#request_interval").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
 }

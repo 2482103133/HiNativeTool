@@ -24,7 +24,7 @@ $(document).ready(function () {
     //存放请求的队列
     window.request_queue = []
     //请求最小间隔，以免给hinative服务器造成负担
-    window.request_interval = 500
+    // request_interval
     //开启请求循环
     start_request_interval()
 
@@ -49,8 +49,8 @@ function process_scroll() {
         }
 
     })
-    if ($("html").get(0).getClientRects().height <= window.innerHeight < 3) {
-        // log("auto scroll! visible count:" + visible_count)
+    if ($("html").get(0).getClientRects()[0].height <= window.innerHeight) {
+        log("auto scroll! visible count:" + visible_count)
         let tmp = $("html").get(0).scrollTop
         var div = $("<div style='display:block;height:" + window.innerHeight + "px;width:20px'>神奇的伸缩棒</div>")
         $("body").append(div)
@@ -107,8 +107,7 @@ function process_blocking() {
 
             //如果该问题已经被屏蔽,就不用画
             if (blocked_quesions[href]) {
-                log("blocked question:" + href)
-                add_block(b_block)
+                add_block(b_block,false)
                 return
             }
 
@@ -135,8 +134,7 @@ function process_blocking() {
                 if (c_req.responseText.indexOf(self_name) > -1) {
                     log("usr:"+usr+" skip quesion because I have selected")
                     add_block(block)
-                    blocked_quesions[href] = true
-                    storage.set({ "blocked_quesions": blocked_quesions })
+
                     return
                 }
              }
@@ -149,9 +147,10 @@ function process_blocking() {
             else if (!(typeof validity_duration === "undefined")) {
                 let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
 
-                log("validity_duration:" + validity_duration + "duration:" + duration)
+               
                 //判断数据是否过期,单位为天
                 if (duration >= validity_duration) {
+                    log("validity_duration:" + validity_duration + "duration:" + duration)
                     log(usr + " data expired!")
                 } else {
                     //已经加载过了
@@ -268,11 +267,18 @@ function block_user(user_name, auto_blocked = true) {
 }
 
 //将block屏蔽掉
-function add_block(ele) {
+//update代表是否更新本次操作到本地
+function add_block(ele,update=true) {
     let usr = jq_must_find(ele, ".username")
 
     //如果用户被屏蔽，则隐藏这个提问
     blocked_blocks.add(ele)
+    if(update)
+    {
+        let href=$(this).attr("href")
+        blocked_quesions[href]=true
+        storage.set({ "blocked_quesions": blocked_quesions })
+    }
 
     if ($("#blocked_blocks").length == 0)
         $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
