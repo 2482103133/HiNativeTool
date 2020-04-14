@@ -104,10 +104,12 @@ function process_blocking() {
             let href = $(this).attr("href")
             let b_block = $(this).get(0)
             let usr = jq_must_find(this, ".username").text()
+            let wrapper = jq_must_find(this, ".username_wrapper")
+
 
             //如果该问题已经被屏蔽,就不用画
             if (blocked_quesions[href]) {
-                add_block(b_block,false)
+                add_block(b_block, false)
                 return
             }
 
@@ -124,20 +126,20 @@ function process_blocking() {
 
             let block = b_block
 
-             //判断是不是选择型问题
-             if ($(block).find("*:contains('does this sound natural')").length > 0) {
-            
-               
+            //判断是不是选择型问题
+            if ($(block).find("*:contains('does this sound natural')").length > 0) {
+
+
                 let c_url = href + "/choice_result"
                 let c_req = request_get(c_url, null, false);
                 //如果已经投过票了,则跳过这个问题
                 if (c_req.responseText.indexOf(self_name) > -1) {
-                    log("usr:"+usr+" skip quesion because I have selected")
+                    log("usr:" + usr + " skip quesion because I have selected")
                     add_block(block)
 
                     return
                 }
-             }
+            }
 
             //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
             if (typeof result_buffer[usr] === "undefined") {
@@ -147,7 +149,7 @@ function process_blocking() {
             else if (!(typeof validity_duration === "undefined")) {
                 let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
 
-               
+
                 //判断数据是否过期,单位为天
                 if (duration >= validity_duration) {
                     log("validity_duration:" + validity_duration + "duration:" + duration)
@@ -160,9 +162,15 @@ function process_blocking() {
                 }
             }
 
+            let loading=null
+            //添加loading图片
+            if($(b_block).find(".script_loading").length==0)
+            {
+                loading =String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`
+                loading=$(loading)
+                wrapper.append(loading)
+            }
             
-
-
             //发送请求
             request_get(href, function (evt) {
                 let q_url = href
@@ -170,8 +178,6 @@ function process_blocking() {
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
-                
-               
 
                 let wrp = $(page.find(".chat_content_wrapper").get(0))
                 //https://hinative.com/en-US/questions/15939889/choice_result
@@ -192,7 +198,7 @@ function process_blocking() {
                     result_buffer[buffer.usr] = buffer1
 
                     if (!need_featured_answer)
-                        update_result_buffer()
+                        success()
 
                     do_painting(b_block1)
 
@@ -212,13 +218,19 @@ function process_blocking() {
                                 }
                             })
 
-                            //更新数据到本地
-                            update_result_buffer()
+                            success()
                         })
                     }
                 })
 
             })
+
+            function success() {
+                
+                //更新数据到本地
+                update_result_buffer()
+                loading.remove()
+            }
         })
 
     } finally {
@@ -268,15 +280,14 @@ function block_user(user_name, auto_blocked = true) {
 
 //将block屏蔽掉
 //update代表是否更新本次操作到本地
-function add_block(ele,update=true) {
+function add_block(ele, update = true) {
     let usr = jq_must_find(ele, ".username")
 
     //如果用户被屏蔽，则隐藏这个提问
     blocked_blocks.add(ele)
-    if(update)
-    {
-        let href=$(this).attr("href")
-        blocked_quesions[href]=true
+    if (update) {
+        let href = $(this).attr("href")
+        blocked_quesions[href] = true
         storage.set({ "blocked_quesions": blocked_quesions })
     }
 
@@ -488,7 +499,7 @@ function get_user_feartured_answer(p_url, buffer) {
     let buffer1 = buffer
     let p_url1 = p_url
     let page_count = fap_count
-    
+
     return new Promise(resolve => {
 
         let buffer = buffer1
@@ -639,13 +650,13 @@ function update_cache() {
 
                             if (++resolved == count)
                                 resolve(result_buffer)
-                            log(buffer3.usr+"data updated:" + resolved +" left:"+(count-resolved))
+                            log(buffer3.usr + "data updated:" + resolved + " left:" + (count - resolved))
                         })
                     } else {
                         result_buffer[buffer1.usr] = buffer1
                         if (++resolved == count)
                             resolve(result_buffer)
-                        log("resolved:" + resolved +" left:"+(count-resolved))
+                        log("resolved:" + resolved + " left:" + (count - resolved))
                     }
 
                 })
