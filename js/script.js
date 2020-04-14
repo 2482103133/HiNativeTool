@@ -36,7 +36,10 @@ $(document).ready(function () {
         }
     }, 200);
 
-    $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
+    if (rearrange) {
+        $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
+        $(".l_sidebar_container").remove()
+    }
 })
 
 //自动下拉以刷新提问
@@ -106,6 +109,15 @@ function process_blocking() {
             let usr = jq_must_find(this, ".username").text()
             let wrapper = jq_must_find(this, ".username_wrapper")
 
+            //七天前的消息
+            if (
+                $("#time_line").length==0
+                &&
+                (new Date().getTime() - new Date(jq_must_find(b_block, ".timeago").get(0).title).getTime()) > (86400 * 1000 * validity_duration)) {
+                window.time_line = $("<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" + validity_duration + "天前的消息</div></div>")
+                $(b_block).before(time_line)
+            }
+
 
             //如果该问题已经被屏蔽,就不用画
             if (blocked_quesions[href]) {
@@ -162,15 +174,14 @@ function process_blocking() {
                 }
             }
 
-            let loading=null
+            let loading = null
             //添加loading图片
-            if($(b_block).find(".script_loading").length==0)
-            {
-                loading =String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`
-                loading=$(loading)
+            if ($(b_block).find(".script_loading").length == 0) {
+                loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`
+                loading = $(loading)
                 wrapper.append(loading)
             }
-            
+
             //发送请求
             request_get(href, function (evt) {
                 let q_url = href
@@ -226,7 +237,7 @@ function process_blocking() {
             })
 
             function success() {
-                
+
                 //更新数据到本地
                 update_result_buffer()
                 loading.remove()
@@ -430,7 +441,7 @@ function do_featrued_painting(ele) {
     let f = result_buffer[usr.text()].featured_answers
 
     let rate = (f / a).toFixed(2)
-    wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "NO ANSWERS") + "</span>")
+    wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "No data!") + "</span>")
     if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
         jq_must_find(ele, ".rate_badge", false).css("background-color", "red")
@@ -515,6 +526,7 @@ function get_user_feartured_answer(p_url, buffer) {
             buffer.answers = 0
         }
         let current_page = 0
+        let resolved = 0
         for (let current_page = 0; current_page < page_count; current_page++) {
             request_page(current_page)
         }
@@ -524,28 +536,48 @@ function get_user_feartured_answer(p_url, buffer) {
                 q_url1 = q_url + '?page=' + (index + 1)
             }
             log("usr:" + buffer.usr + " page:" + q_url1)
+
             //请求该用户的提问页，用于得到问题的采纳率
             request_get(q_url1, function (evt) {
 
                 let qtxt = evt.srcElement.response
                 let page = to_jq(qtxt)
                 //获得第一页回答的问题
-                let blocks = page.find(".d_block")
-
+                let blocks = page.find(".d_block:not(:has(.has_no_answer))")
+       
+                function check_out() {
+                    log("usr:" + buffer.usr + " index:" + index + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                    if (resolved == page_count && blocks_count == buffer.answers) {
+                        //更新时间
+                        buffer.time = new Date().getTime()
+                        log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
+                        resolve(buffer)
+                        return true
+                    }
+                    else {
+                        return false
+                    }
+                    //当所有的问题都加载完，统计结果，并添加到缓存中
+                    // if (blocks_count == buffer.answers && index >= (page_count - 1)) {
+                    //     return true
+                    // }
+                    // return false
+                }
+                
                 //最后一页了,则取消继续查询
-                if (blocks.length == 0) {
-                    page_count = 0
+                if ( page.find(".d_block").length == 0 || blocks.length==0) {
+                    resolved++;
+                    if (check_out()) {
+                        return
+                    }
                 }
 
+                let resolved_blocks = 0
                 //初始化总的有回复的提问数
                 blocks.each(function () {
                     let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim()
                     log("usr-question:" + buffer.usr + " badge:" + badge)
-                    //如果无人回答则不计入
-                    if (badge == "0") {
-                        // log("skipped quesition")
-                        return
-                    }
+          
                     blocks_count++;
                     let fq_url = this.href
 
@@ -559,17 +591,22 @@ function get_user_feartured_answer(p_url, buffer) {
                         else {
                             //未被采纳
                         }
+
                         buffer.answers++
-                        // log("usr:" + buffer.usr + " index:" + index + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-                        //当所有的问题都加载完，统计结果，并添加到缓存中
-                        if (blocks_count == buffer.answers && index >= (page_count - 1)) {
-                            //更新时间
-                            buffer.time = new Date().getTime()
-                            log("usr:" + buffer.usr + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
-                            resolve(buffer)
+                        resolved_blocks++;
+
+                        if (blocks.length == resolved_blocks) {
+                            resolved++;
+                        }
+
+                        if (check_out()) {
                             return
                         }
                     })
+
+
+
+
 
                 })
             })
@@ -590,7 +627,9 @@ function to_jq(html_text) {
 function jq_must_find(ele, selector, force = true) {
     let find = $(ele).find(selector)
     if (force && find.length == 0) {
-        alert("未能找到关键样式:" + selector + " 请联系作者解决!,程序将被暂停运行~~")
+        if (extension_enabled) {
+            alert("未能找到关键样式:" + selector + " 请联系作者解决!,程序将被暂停运行~~")
+        }
         extension_enabled = false
     }
     return find
