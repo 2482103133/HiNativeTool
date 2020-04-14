@@ -60,8 +60,8 @@ result = String.raw`
 `
 console.log(process.cwd())
 function generate() {
-    let to_url = "tmp/tampermonkey-adaption.js"
-    fs.writeFileSync("tmp/tmp.txt", include_scripts(popup_uri))
+    let to_url = "temp/tampermonkey-adaption.js"
+    fs.writeFileSync("temp/tmp.txt", include_scripts(popup_uri))
     result += inject("js/common.js")
     result += inject("js/background.js")
     result += inject("js/script.js")
