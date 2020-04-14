@@ -487,7 +487,8 @@ function get_user_info(p_url, usr) {
 function get_user_feartured_answer(p_url, buffer) {
     let buffer1 = buffer
     let p_url1 = p_url
-    let page_count = 2
+    let page_count = fap_count
+    
     return new Promise(resolve => {
 
         let buffer = buffer1

@@ -132,12 +132,12 @@ function add_script_value(key1, dflt1) {
   return new Promise(resolve => {
     storage.get([key], function (result) {
       
-      if (typeof result[key] == "undefined") {
+      if (typeof result[key] === "undefined") {
         let obj = {}
         obj[key] = dflt
-        
-        // storage.set(obj)
         result[key] = dflt
+        log("undefined key:"+key)
+        storage.set(obj)
       }
 
       set_variable(key,result[key]).then(function () {
@@ -151,7 +151,6 @@ function add_script_value(key1, dflt1) {
 function set_variable(key,value)
 {
   let code = "window."+key + ' = ' +JSON.stringify(value)
-      
   return execute_script(code);
 }
 
@@ -164,7 +163,6 @@ function execute_script(script) {
     mode.ExecuteScript({
       code: script1
     },()=>{
-      
       let e=chrome.runtime.lastError 
       resolve()
     })

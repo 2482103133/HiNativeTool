@@ -34,6 +34,7 @@ set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 set_binding("self_name", $("#username").get(0))
 set_binding("request_interval", $("#request_interval").get(0))
+set_binding("fap_count", $("#fap_count").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
 }
@@ -41,7 +42,6 @@ binding_list("white_list", $("#white_list").get(0))
 function binding_list(key, tbody) {
     ((key, tbody) => {
         let list = []
-
         storage.get([key], function (rslt) {
 
             list = typeof rslt[key] === "undefined" ? [] : rslt[key]
@@ -83,9 +83,7 @@ function binding_list(key, tbody) {
 function set_binding(key1, check1) {
     let key = key1
     let check = check1
-    $(check).change(function () {
-        set_status()
-    })
+    
     
     storage.get([key], function (result) {
         switch (check.type) {
@@ -95,9 +93,12 @@ function set_binding(key1, check1) {
             default:
                 $(check).val(result[key])
         }
-        $(check).trigger("change");
-        set_status()
+        $(check).change(function () {
+            set_status()
+        })
     })
+
+   
 
     function set_status() {
         let value = (function () {

@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         HiNativeTool
 // @namespace    http://tampermonkey.net/
-// @version      1.2.71
+// @version      1.2.72
 // @description  Handy Hinative tool!!
 // @author       Collen Zhou
 // @match        *://hinative.com/*
@@ -109,8 +109,7 @@ window. TMMode = function () {
   this.ExecuteScript = function (obj, callback) {
    
     eval(obj.code)
-    
-    
+   
     callback.call(this)
   }
 
@@ -170,12 +169,11 @@ function add_script_value(key1, dflt1) {
   return new Promise(resolve => {
     storage.get([key], function (result) {
       
-      if (typeof result[key] == "undefined") {
+      if (typeof result[key] === "undefined") {
         let obj = {}
         obj[key] = dflt
-        
-        // storage.set(obj)
         result[key] = dflt
+        log("undefined key:"+key)
       }
 
       set_variable(key,result[key]).then(function () {
@@ -189,7 +187,6 @@ function add_script_value(key1, dflt1) {
 function set_variable(key,value)
 {
   let code = "window."+key + ' = ' +JSON.stringify(value)
-      
   return execute_script(code);
 }
 
@@ -202,7 +199,6 @@ function execute_script(script) {
     mode.ExecuteScript({
       code: script1
     },()=>{
-      
       let e=chrome.runtime.lastError 
       resolve()
     })
@@ -245,7 +241,8 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "white_list": [],
     "self_name":(()=>{})(),
     "blocked_quesions":{},
-    "request_interval":1000
+    "request_interval":500,
+    "fap_count":3
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){
@@ -743,7 +740,8 @@ function get_user_info(p_url, usr) {
 function get_user_feartured_answer(p_url, buffer) {
     let buffer1 = buffer
     let p_url1 = p_url
-    let page_count = 2
+    let page_count = fap_count
+    
     return new Promise(resolve => {
 
         let buffer = buffer1
@@ -929,50 +927,64 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
 <head>
   <meta charset="UTF-8">
   <style>
-    .popup{
+    .popup {
       width: 400px;
       height: 500px;
     }
-    .option_table{
+
+    .popup,td {
+      position: relative;
+    }
+
+    .option_table {
       text-align: right;
     }
-    .range{
+
+    .range {
       width: 120px;
+      margin: auto;
+      display: block;
+      top: 50%;
+      position: absolute;
+      transform: translate(0, -50%);
     }
-    .numer_input{
+
+    .numer_input {
       text-align: right;
       width: 120px;
     }
-    .button{
+
+    .button {
       border-style: outset;
       padding: 0%;
     }
-    .list_table_container{
+
+    .list_table_container {
       text-align: left;
       border-style: double;
     }
-    .list_table{
+
+    .list_table {
       display: inline-block;
       height: 300px;
       overflow: scroll;
     }
-    
   </style>
 </head>
 
 <body class="popup">
-  <table class="option_table" >
+  <table class="option_table">
     <thead>
       <tr>Info</tr>
     </thead>
     <tbody>
       <tr>
         <td>username:</td>
-        <td><input id="username" type="text"  title="user name" disabled/></td>
+        <td><input id="username" type="text" title="user name" disabled /></td>
       </tr>
     </tbody>
   </table>
-  <table class="option_table" >
+  <table class="option_table">
     <thead>
       <tr>Options</tr>
     </thead>
@@ -991,6 +1003,12 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
         </td>
       </tr>
       <tr>
+        <td>Qustions page count:</td>
+        <td><input id="fap_count"  type="number" class="numer_input" min="1" step="1" max="10" pattern="\d*"
+          title="set question pages count the script need to search, might cause low performance if set too high"
+          /><br /></td>
+      </tr>
+      <tr>
         <td>Cache new users:</td>
         <td><input id="cache_new_users" type="checkbox"
             title="Check to cache new user's data,this option can be reverted." /><br /></td>
@@ -1001,34 +1019,37 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
       </tr>
       <tr>
         <td>Block rate below:</td>
-        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1"
+            step="0.1" /><br /></td>
       </tr>
       <tr>
         <td>Data validity duration(d):</td>
-        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*"
+            title="interval of auto updateing data which has expired:" /><br /></td>
       </tr>
       <tr>
         <td>Request interval(ms):</td>
-        <td><input id="request_interval" type="number" class="numer_input"  min="0" step="100" pattern="\d*" title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br /></td>
+        <td><input id="request_interval" type="number" class="numer_input" min="0" step="100" pattern="\d*"
+            title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br />
+        </td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
         <td><input id="cached" type="button" value="🚮"
-            title="Clear buffered responses,you might need to re-reqeust those data!"
-           class='button'></input><br /></td>
+            title="Clear buffered responses,you might need to re-reqeust those data!" class='button'></input><br /></td>
       </tr>
       <tr>
         <td> Update chached data:</td>
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
-          class='button'></input><br /></td>
+            class='button'></input><br /></td>
       </tr>
-      <tr >
-        <td class="list_table_container" >
-          <table >
+      <tr>
+        <td class="list_table_container">
+          <table>
             <thead>
               <tr>Blocked Users</tr>
             </thead>
-            <tbody id="blocked_users" class="list_table" >
+            <tbody id="blocked_users" class="list_table">
             </tbody>
           </table>
         </td>
@@ -1049,6 +1070,7 @@ window.popuphtml=String.raw`<div id='popup' style='padding:10px;display: inline-
   <script src="/js/common.js"></script>
   <script src="/js/popup.js"></script>
 </body>
+
 </html></div>`
 s.append(window.popuphtml)
 function setup_popup(){
@@ -1087,6 +1109,7 @@ set_binding("show_log", $("#show_log").get(0))
 set_binding("validity_duration", $("#validity_duration").get(0))
 set_binding("self_name", $("#username").get(0))
 set_binding("request_interval", $("#request_interval").get(0))
+set_binding("fap_count", $("#fap_count").get(0))
 binding_list("blocked_users", $("#blocked_users").get(0))
 binding_list("white_list", $("#white_list").get(0))
 }

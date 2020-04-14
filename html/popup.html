@@ -4,50 +4,64 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    .popup{
+    .popup {
       width: 400px;
       height: 500px;
     }
-    .option_table{
+
+    .popup,td {
+      position: relative;
+    }
+
+    .option_table {
       text-align: right;
     }
-    .range{
+
+    .range {
       width: 120px;
+      margin: auto;
+      display: block;
+      top: 50%;
+      position: absolute;
+      transform: translate(0, -50%);
     }
-    .numer_input{
+
+    .numer_input {
       text-align: right;
       width: 120px;
     }
-    .button{
+
+    .button {
       border-style: outset;
       padding: 0%;
     }
-    .list_table_container{
+
+    .list_table_container {
       text-align: left;
       border-style: double;
     }
-    .list_table{
+
+    .list_table {
       display: inline-block;
       height: 300px;
       overflow: scroll;
     }
-    
   </style>
 </head>
 
 <body class="popup">
-  <table class="option_table" >
+  <table class="option_table">
     <thead>
       <tr>Info</tr>
     </thead>
     <tbody>
       <tr>
         <td>username:</td>
-        <td><input id="username" type="text"  title="user name" disabled/></td>
+        <td><input id="username" type="text" title="user name" disabled /></td>
       </tr>
     </tbody>
   </table>
-  <table class="option_table" >
+  <table class="option_table">
     <thead>
       <tr>Options</tr>
     </thead>
@@ -66,6 +80,12 @@
         </td>
       </tr>
       <tr>
+        <td>Qustions page count:</td>
+        <td><input id="fap_count"  type="number" class="numer_input" min="1" step="1" max="10" pattern="\d*"
+          title="set question pages count the script need to search, might cause low performance if set too high"
+          /><br /></td>
+      </tr>
+      <tr>
         <td>Cache new users:</td>
         <td><input id="cache_new_users" type="checkbox"
             title="Check to cache new user's data,this option can be reverted." /><br /></td>
@@ -76,34 +96,37 @@
       </tr>
       <tr>
         <td>Block rate below:</td>
-        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1" step="0.1" /><br /></td>
+        <td><input id="block_rate_below" type="range" class="range" title="Block rate below" min="0" max="1"
+            step="0.1" /><br /></td>
       </tr>
       <tr>
         <td>Data validity duration(d):</td>
-        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*" title="interval of auto updateing data which has expired:" /><br /></td>
+        <td><input id="validity_duration" type="number" class="numer_input" min="0" step="1" pattern="\d*"
+            title="interval of auto updateing data which has expired:" /><br /></td>
       </tr>
       <tr>
         <td>Request interval(ms):</td>
-        <td><input id="request_interval" type="number" class="numer_input"  min="0" step="100" pattern="\d*" title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br /></td>
+        <td><input id="request_interval" type="number" class="numer_input" min="0" step="100" pattern="\d*"
+            title="min allowed interval of sending xhr requests:<br/> you might get banned if the value is set too low" /><br />
+        </td>
       </tr>
       <tr>
         <td> Clear cached data:</td>
         <td><input id="cached" type="button" value="🚮"
-            title="Clear buffered responses,you might need to re-reqeust those data!"
-           class='button'></input><br /></td>
+            title="Clear buffered responses,you might need to re-reqeust those data!" class='button'></input><br /></td>
       </tr>
       <tr>
         <td> Update chached data:</td>
         <td><input id="update" type="button" value="🆕" title="Update Chached Data,might take some time."
-          class='button'></input><br /></td>
+            class='button'></input><br /></td>
       </tr>
-      <tr >
-        <td class="list_table_container" >
-          <table >
+      <tr>
+        <td class="list_table_container">
+          <table>
             <thead>
               <tr>Blocked Users</tr>
             </thead>
-            <tbody id="blocked_users" class="list_table" >
+            <tbody id="blocked_users" class="list_table">
             </tbody>
           </table>
         </td>
@@ -124,4 +147,5 @@
   <script src="/js/common.js"></script>
   <script src="/js/popup.js"></script>
 </body>
+
 </html>
