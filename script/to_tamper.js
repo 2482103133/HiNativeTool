@@ -52,7 +52,7 @@ result = String.raw`
             
     }
     
-    let s=$("<span></span>")
+    let s=$("<li></li>")
     let ts=$("<span id='setting' title='sript settings' style='font-size: 22px;cursor: pointer;'  >⚙️</span>")
     ts.click(toggle_setting)
     s.append(ts)

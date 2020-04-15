@@ -32,9 +32,10 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "result_buffer": {},
     "white_list": [],
     "self_name":(()=>{})(),
+    "self_url":(()=>{})(),
     "blocked_quesions":{},
     "request_interval":200,
-    "fap_count":3,
+    "fap_count":2,
     "old_question_age":7,
     "rearrange":true
   }

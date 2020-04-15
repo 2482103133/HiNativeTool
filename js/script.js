@@ -39,6 +39,11 @@ $(document).ready(function () {
     if (rearrange) {
         $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
         $(".l_sidebar_container").remove()
+        let q=$("<li><a  title='my questions' href='"+window.self_url+"/questions' style='font-size: 22px;cursor: pointer;'  >❔</a></li>")
+        let a=$("<li><a  title='my answers' href='"+window.self_url+"/answers' style='font-size: 22px;cursor: pointer;'  >💡</a></li>")
+
+        $(".nav_activity").after(q)
+        $(".nav_activity").after(a)
     }
 })
 
