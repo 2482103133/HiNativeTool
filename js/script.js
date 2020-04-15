@@ -2,6 +2,7 @@ $(document).ready(function () {
     // https://hinative.com/en-US 只监听qeustions路径
     if (!window.location.pathname.match(/^\/[^\/]*$/))
         return
+
     //缓存的结果，减少xhr次数
     // result_buffer
     //数据是否加载完
@@ -45,20 +46,22 @@ $(document).ready(function () {
         $(".nav_activity").after(q)
         $(".nav_activity").after(a)
     }
+
+    //每三分钟不活动刷新一次
+    var timeout;
+    document.onmousemove = function(){
+        clearTimeout(timeout);
+        timeout = setTimeout(function(){
+            location.reload()
+        }, 60*1000*3);
+      }
 })
 
 //自动下拉以刷新提问
 function process_scroll() {
-    let visible_count = 0
-    let qts = get_questions()
-    qts.each(function () {
-        if (this.style.visibility != "hidden" && this.style.display != "none" && $(this).is(":visible")) {
-            visible_count++
-        }
 
-    })
     if ($("html").get(0).getClientRects()[0].height <= window.innerHeight) {
-        log("auto scroll! visible count:" + visible_count)
+        log("auto scroll! ")
         let tmp = $("html").get(0).scrollTop
         var div = $("<div style='display:block;height:" + window.innerHeight + "px;width:20px'>神奇的伸缩棒</div>")
         $("body").append(div)
