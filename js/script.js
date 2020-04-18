@@ -116,195 +116,200 @@ function process_blocking() {
 
         //遍历每个回答
         get_questions().each(function () {
-            let href = $(this).attr("href")
-            let b_block = $(this).get(0)
-            let usr = jq_must_find(this, ".username").text()
-            let wrapper = jq_must_find(this, ".username_wrapper")
-
-            //用 div替换a
-            if (b_block.outerHTML.startsWith("<a")) {
-                let newDiv = $(b_block.outerHTML.replace(/^<a/, "<div").replace("/a>$/", "/div>"))
-                $(b_block).replaceWith(newDiv)
-                b_block = newDiv.get(0)
-            }
-
-
-            //更新问题信息到本地
-            let q_info = questions_info[href]
-            if (typeof q_info === "undefined") {
-                q_info = { url: href, blocked: false, select_urls: [] }
-                questions_info[href] = q_info
-                storage.set({ questions_info: questions_info })
-
-            }
-            //七天前的消息
-            if (
-                $("#time_line").length == 0
-                &&
-                (new Date().getTime() - new Date(jq_must_find(b_block, ".timeago").get(0).title).getTime()) > (86400 * 1000 * validity_duration)) {
-                window.time_line = $("<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" + validity_duration + "天前的消息</div></div>")
-                $(b_block).before(time_line)
-            }
-
-
-            //如果该问题已经被屏蔽,就不用画
-            if (q_info.blocked) {
-                add_block(b_block, false)
-                return
-            }
-
-            //如果是屏蔽用户则不用画
-            if (!check_block(b_block)) {
-                //log("return:" + usr)
-                return
-            }
-
-            //如果已经画过了也不用画
-            if (b_block.painted == true) {
-                return
-            }
-
-            let block = b_block
-
-            //判断是不是选择型问题
-            if( $(block).find("*:contains('does this sound natural')").length > 0||$(block).find("*:contains('听起来自然吗？')").length > 0) {
-
-
-                let c_url = href + "/choice_result"
-                let c_req = request_get(c_url, null, false);
-                //如果已经投过票了,则跳过这个问题
-                if (c_req.responseText.indexOf(self_name) > -1) {
-                    log("usr:" + usr + " skip quesion because I have selected")
-
-                    add_block(block)
-                    return
-                }
-            }
-
-            //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
-            if (typeof result_buffer[usr] === "undefined") {
-                //没有加载过就继续
-                log("usr not in buffer:" + usr)
-            }
-            else if (!(typeof validity_duration === "undefined")) {
-                let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
-
-
-                //判断数据是否过期,单位为天
-                if (duration >= validity_duration) {
-                    log("validity_duration:" + validity_duration + "duration:" + duration)
-                    log(usr + " data expired!")
-                } else {
-                    //已经加载过了
-                    //如果是新的方块则重新画一遍
-                    do_painting(b_block, result_buffer[usr].txt)
-                    return
-                }
-            }
-
-            let loading = null
-            //添加loading图片
-            if ($(b_block).find(".script_loading").length == 0) {
-                loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`
-                loading = $(loading)
-                wrapper.append(loading)
-            }
-
-            //发送请求
-            request_get(href, function (evt) {
-                let q_url = href
-
-                //得到用户页面
-                let txt = evt.srcElement.response
-                let page = to_jq(txt)
-                let vote = page.find("#js-choice_vote")
-                let select_urls = []
-
-                //保存选择项
-                if (vote.length > 0) {
-                    let div = $("<div>")
-
-                    //获得投票选项
-                    vote.find(".list-group-item").each(function () {
-                        // let clone = $(this).clone()
-                        // clone.css("display", "inline-block")
-                        // div.append(clone)
-                        let link=jq_must_find(this, "a")
-                        let url = link.attr("href")
-                        if (url == "") {
-                            //设置keyword
-                            jq_must_find(page,"#question_keyword_id").val(link.attr("data-url").match(/\d+$/))
-                            let form=jq_must_find(page,"form[data-text-correction-form]")
-                            url=q_url+"/content_corrections?"+form.serialize()+"&commit=Submit%20correction"
-                            log("href:"+href)
-                        }
-                        select_urls.push(url)
-                    })
-                    // select_urls = div.get(0).outerHTML
-                }
-
-                let wrp = $(page.find(".chat_content_wrapper").get(0))
-                //https://hinative.com/en-US/questions/15939889/choice_result
-
-                //获得用户profileurl
-                let p_url = wrp.find("a").get(0).href
-                let usr1 = usr
-
-                q_info.select_urls = select_urls
-                storage.set({ questions_info: questions_info })
-
-                get_user_info(p_url, usr1).then(function (buffer) {
-
-                    let b_block1 = b_block
-                    let buffer1 = buffer
-
-                    if (b_block1.painted == true) {
-                        return
-                    }
-
-                    //保存了基本信息和用户地址
-                    result_buffer[buffer.usr] = buffer1
-
-                    if (!need_featured_answer)
-                        success()
-
-                    do_painting(b_block1)
-
-                    if (need_featured_answer == true) {
-                        get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
-
-                            log("featrued loaded:" + buffer.usr)
-
-                            result_buffer[buffer.usr] = buffer
-                            //将所有同名的block都加上rate
-                            get_questions().each(function () {
-                                if (this.featrued_painted != true) {
-                                    let a_usr = jq_must_find(this, ".username")
-                                    if (a_usr.text() == buffer.usr) {
-                                        do_featrued_painting(this)
-                                    }
-                                }
-                            })
-
-                            success()
-                        })
-                    }
-                })
-
-            })
-
-            function success() {
-
-                //更新数据到本地
-                update_result_buffer()
-                loading.remove()
-            }
+            process(this)
         })
 
     } finally {
         blocking = false
     }
 }
+
+function process(ele) {
+    let href = $(ele).attr("href")
+    let b_block = $(ele).get(0)
+    let usr = jq_must_find(ele, ".username").text()
+    let wrapper = jq_must_find(ele, ".username_wrapper")
+
+    //用 div替换a
+    if (b_block.outerHTML.startsWith("<a")) {
+        let newDiv = $(b_block.outerHTML.replace(/^<a/, "<div").replace("/a>$/", "/div>"))
+        $(b_block).replaceWith(newDiv)
+        b_block = newDiv.get(0)
+    }
+
+
+    //更新问题信息到本地
+    let q_info = questions_info[href]
+    if (typeof q_info === "undefined") {
+        q_info = { url: href, blocked: false, select_urls: [] }
+        questions_info[href] = q_info
+        storage.set({ questions_info: questions_info })
+
+    }
+    //七天前的消息
+    if (
+        $("#time_line").length == 0
+        &&
+        (new Date().getTime() - new Date(jq_must_find(b_block, ".timeago").get(0).title).getTime()) > (86400 * 1000 * validity_duration)) {
+        window.time_line = $("<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" + validity_duration + "天前的消息</div></div>")
+        $(b_block).before(time_line)
+    }
+
+    // //如果该问题已经被屏蔽,就不用画
+    // if (q_info.blocked) {
+    //     add_block(b_block, false)
+    //     return
+    // }
+
+    //如果是屏蔽用户则不用画
+    if (!check_block(b_block)) {
+        //log("return:" + usr)
+        return
+    }
+
+    //如果已经画过了也不用画
+    if (b_block.painted == true) {
+        return
+    }
+
+    let block = b_block
+
+    //判断是不是选择型问题
+    if ($(block).find("*:contains('does this sound natural')").length > 0 || $(block).find("*:contains('听起来自然吗？')").length > 0) {
+
+
+        let c_url = href + "/choice_result"
+        let c_req = request_get(c_url, null, false);
+        //如果已经投过票了,则跳过这个问题
+        if (c_req.responseText.indexOf(self_name) > -1) {
+            log("usr:" + usr + " skip quesion because I have selected")
+
+            add_block(block)
+            return
+        }
+    }
+
+    //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
+    if (typeof result_buffer[usr] === "undefined") {
+        //没有加载过就继续
+        log("usr not in buffer:" + usr)
+    }
+    else if (!(typeof validity_duration === "undefined")) {
+        let duration = (new Date().getTime() - result_buffer[usr].time) / (86400 * 1000)
+
+
+        //判断数据是否过期,单位为天
+        if (duration >= validity_duration) {
+            log("validity_duration:" + validity_duration + "duration:" + duration)
+            log(usr + " data expired!")
+        } else {
+            //已经加载过了
+            //如果是新的方块则重新画一遍
+            do_painting(b_block, result_buffer[usr].txt)
+            return
+        }
+    }
+
+    let loading = null
+    //添加loading图片
+    if ($(b_block).find(".script_loading").length == 0) {
+        loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`
+        loading = $(loading)
+        wrapper.append(loading)
+    }
+
+    //发送请求
+    request_get(href, function (evt) {
+        let q_url = href
+
+        //得到用户页面
+        let txt = evt.srcElement.response
+        let page = to_jq(txt)
+        let vote = page.find("#js-choice_vote")
+        let select_urls = []
+
+        //保存选择项
+        if (vote.length > 0) {
+            let div = $("<div>")
+
+            //获得投票选项
+            vote.find(".list-group-item").each(function () {
+                // let clone = $(this).clone()
+                // clone.css("display", "inline-block")
+                // div.append(clone)
+                let link = jq_must_find(this, "a")
+                let url = link.attr("href")
+                if (url == "") {
+                    //设置keyword
+                    jq_must_find(page, "#question_keyword_id").val(link.attr("data-url").match(/\d+$/))
+                    let form = jq_must_find(page, "form[data-text-correction-form]")
+                    url = q_url + "/content_corrections?" + form.serialize() + "&commit=Submit%20correction"
+                    log("href:" + href)
+                }
+                select_urls.push(url)
+            })
+            // select_urls = div.get(0).outerHTML
+        }
+
+        let wrp = $(page.find(".chat_content_wrapper").get(0))
+        //https://hinative.com/en-US/questions/15939889/choice_result
+
+        //获得用户profileurl
+        let p_url = wrp.find("a").get(0).href
+        let usr1 = usr
+
+        q_info.select_urls = select_urls
+        storage.set({ questions_info: questions_info })
+
+        get_user_info(p_url, usr1).then(function (buffer) {
+
+            let b_block1 = b_block
+            let buffer1 = buffer
+
+            if (b_block1.painted == true) {
+                return
+            }
+
+            //保存了基本信息和用户地址
+            result_buffer[buffer.usr] = buffer1
+
+            if (!need_featured_answer)
+                success()
+
+            do_painting(b_block1)
+
+            if (need_featured_answer == true) {
+                get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
+
+                    log("featrued loaded:" + buffer.usr)
+
+                    result_buffer[buffer.usr] = buffer
+                    //将所有同名的block都加上rate
+                    get_questions().each(function () {
+                        if (this.featrued_painted != true) {
+                            let a_usr = jq_must_find(this, ".username")
+                            if (a_usr.text() == buffer.usr) {
+                                do_featrued_painting(this)
+                            }
+                        }
+                    })
+
+                    success()
+                })
+            }
+        })
+
+    })
+
+    function success() {
+
+        //更新数据到本地
+        update_result_buffer()
+        loading.remove()
+    }
+
+}
+
 function create_question_info(url) {
     return { url: url, blocked: false }
 }
@@ -351,7 +356,7 @@ function block_user(user_name, auto_blocked = true) {
 
 //将block屏蔽掉
 //update代表是否更新本次操作到本地
-function add_block(ele, update = true) {
+function add_block(ele, update = true, is_auto = true) {
     let usr = jq_must_find(ele, ".username")
 
     //如果用户被屏蔽，则隐藏这个提问
@@ -359,6 +364,7 @@ function add_block(ele, update = true) {
     if (update) {
         let href = $(ele).attr("href")
         questions_info[href].blocked = true
+        questions_info[href].is_auto = is_auto
         storage.set({ "questions_info": questions_info })
     }
 
@@ -371,6 +377,8 @@ function add_block(ele, update = true) {
     log("已隐藏用户问题:" + usr.text())
     ele.style.display = "none"
 }
+
+
 
 //添加用户到白名单
 function add_white_list(user_name) {
@@ -410,33 +418,41 @@ function do_painting(ele) {
     let q_info = questions_info[url]
     let buffer = result_buffer[usr.text()]
     let info = buffer.info
-    let div=$("<div>")
+    let div = $("<div>")
 
-    let fuki=jq_must_find(ele, ".wrapper_fukidashi")
+    let fuki = jq_must_find(ele, ".wrapper_fukidashi")
     fuki.append(div)
 
-    let q_block=jq_must_find(ele, ".q_block")
-    q_block.css("cursor","pointer")
-    q_block.click(function(){
-        location.href=url
+    let q_block = jq_must_find(ele, ".q_block")
+    q_block.css("cursor", "pointer")
+    q_block.click(function () {
+        location.href = url
     })
 
-   
+
     if (q_info.select_urls.length > 0) {
         //画上选择项
-       
+
         add_item(0, "Natural")
         add_item(1, "A little unnatural")
         add_item(2, "Unnatural")
         add_item(3, "Don't konw")
         function add_item(index, title) {
-            let url =   q_info.select_urls[index]
-          
+            let url = q_info.select_urls[index]
+
             let s = $("<span style='border-style: solid;border-width: 1px;margin: 2px;padding: 2px;cursor: pointer;' title='" + title + "'>" + title + "</span>")
             s.click(function () {
+                var b = ele
+                $(b).hide()
                 // console.log("post:" + url)
-                unsafeWindow.$.post({url:url,dataType:"script"})
+                unsafeWindow.$.post({
+                    url: url, dataType: "script", complete: function (xhr) {
+                        if (xhr.status == "302" || xhr.status == "200")
+                            process(b)
+                    }
+                })
                 console.log("$.post(\"" + url + "\")")
+
             }
             )
             div.append(s)
@@ -469,7 +485,7 @@ function do_painting(ele) {
     let cls = $("<span style='display: inline-block;float: right; cursor: pointer;' title='close this question'>✕</span>")
     cls.click(function (e) {
         e.preventDefault()
-        add_block(ele, true)
+        add_block(ele, true, false)
     })
     cwrp.prepend(cls)
 
@@ -559,7 +575,7 @@ function do_featrued_painting(ele) {
     return true
 
 }
-//判断是否块块是否好好的,需要被屏蔽
+//判断是否块块是否可画
 function check_block(ele, why) {
 
     //如果已经屏蔽，则不用画了
@@ -571,11 +587,36 @@ function check_block(ele, why) {
     if (white_list.indexOf(usr.text()) >= 0) {
         return true
     }
-
+    //如果是黑名单用户则直接屏蔽
     if (blocked_users.indexOf(usr.text()) > -1) {
-
-        add_block(ele)
+        add_block(ele, false, true)
         return false
+    }
+    let q_info = questions_info[$(ele).attr("href")]
+    if (typeof q_info === "undefined") { 
+
+    }
+    else {
+        var blockable=null
+        //如果开启自动屏蔽了
+        if(auto_block)
+        {
+            blockable= q_info.blocked
+        }
+        else if( q_info.blocked){
+            if(q_info.is_auto)
+            blockable= false
+            else{
+                blockable= true
+            }
+
+        }
+        if(blockable)
+        {
+            add_block(ele, false, true)
+            return false
+        }
+    
     }
 
     return true
