@@ -1,4 +1,8 @@
 {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
     "python.pythonPath": "C:\\Python37\\python.exe",
     "terminal.integrated.shellArgs.windows": ["-NoExit", "/c", "chcp.com 65001"],
 }

@@ -2,7 +2,7 @@
 一个基于JavaScript的Chrome Extension.   
 __已添加TamperMonkey插件支持!__  
 [Github项目地址](https://github.com/2482103133/HiNative-Chrome-Extension)  
-[TamperMonkey地址](https://greasyfork.org/en/scripts/400206-hinativetool)  
+[TamperMonkey(油猴脚本)地址](https://greasyfork.org/en/scripts/400206-hinativetool)  
 ### 主要实现功能:  
 1. 根据提问者的响应率(由官方提供的笑脸,愁脸使用的class name得到)来让问题背景用不同颜色显示,如红色代表这是一个低回复率的提问者所提的问题,而没有颜色代表是新人  
 1. 显示提问者的回答数和问题数  
@@ -14,7 +14,8 @@ __已添加TamperMonkey插件支持!__
 7. 允许屏蔽采纳率低于某个值（0~1）的用户的提问，可以在popup中更改  
 8. 允许设置单条数据有效时间，默认是7天，可以在popup中更改 
 9. 自动过滤已经选择过的"does this sound natural"问题,这个官方没有给出选项.
-10. 为"does this sound natural"问题在问题列表界面添加快速选择入口
+10. 为"does this sound natural"问题在问题列表界面添加快速选择  
+11. 为我的提问,我的回答,提问者的资料提供快捷入口
 
 ### 下载与使用  
 > *由于缺那5个$，所以暂时只能以离线的方式呈现.*
