@@ -29,6 +29,8 @@ $(document).ready(function () {
     //开启请求循环
     start_request_interval()
 
+
+
     //监听blocks变化
     setInterval(() => {
         if ((!(typeof data_loaded === "undefined")) && data_loaded && extension_enabled) {
@@ -40,21 +42,23 @@ $(document).ready(function () {
     if (rearrange) {
         $("main").append("<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>")
         $(".l_sidebar_container").remove()
-        let q=$("<li><a  title='my questions' href='"+window.self_url+"/questions' style='font-size: 22px;cursor: pointer;'  >❔</a></li>")
-        let a=$("<li><a  title='my answers' href='"+window.self_url+"/answers' style='font-size: 22px;cursor: pointer;'  >💡</a></li>")
+        let q = $("<li><a  title='my questions' href='" + window.self_url + "/questions' style='font-size: 22px;cursor: pointer;'  >❔</a></li>")
+        let a = $("<li><a  title='my answers' href='" + window.self_url + "/answers' style='font-size: 22px;cursor: pointer;'  >💡</a></li>")
 
         $(".nav_activity").after(q)
         $(".nav_activity").after(a)
     }
 
+
+
     //每三分钟不活动刷新一次
     var timeout;
-    document.onmousemove = function(){
+    document.onmousemove = function () {
         clearTimeout(timeout);
-        timeout = setTimeout(function(){
+        timeout = setTimeout(function () {
             location.reload()
-        }, 60*1000*3);
-      }
+        }, 60 * 1000 * 3);
+    }
 })
 
 //自动下拉以刷新提问
@@ -117,9 +121,25 @@ function process_blocking() {
             let usr = jq_must_find(this, ".username").text()
             let wrapper = jq_must_find(this, ".username_wrapper")
 
+            //用 div替换a
+            if (b_block.outerHTML.startsWith("<a")) {
+                let newDiv = $(b_block.outerHTML.replace(/^<a/, "<div").replace("/a>$/", "/div>"))
+                $(b_block).replaceWith(newDiv)
+                b_block = newDiv.get(0)
+            }
+
+
+            //更新问题信息到本地
+            let q_info = questions_info[href]
+            if (typeof q_info === "undefined") {
+                q_info = { url: href, blocked: false, select_urls: [] }
+                questions_info[href] = q_info
+                storage.set({ questions_info: questions_info })
+
+            }
             //七天前的消息
             if (
-                $("#time_line").length==0
+                $("#time_line").length == 0
                 &&
                 (new Date().getTime() - new Date(jq_must_find(b_block, ".timeago").get(0).title).getTime()) > (86400 * 1000 * validity_duration)) {
                 window.time_line = $("<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" + validity_duration + "天前的消息</div></div>")
@@ -128,7 +148,7 @@ function process_blocking() {
 
 
             //如果该问题已经被屏蔽,就不用画
-            if (blocked_quesions[href]) {
+            if (q_info.blocked) {
                 add_block(b_block, false)
                 return
             }
@@ -147,7 +167,7 @@ function process_blocking() {
             let block = b_block
 
             //判断是不是选择型问题
-            if ($(block).find("*:contains('does this sound natural')").length > 0) {
+            if( $(block).find("*:contains('does this sound natural')").length > 0||$(block).find("*:contains('听起来自然吗？')").length > 0) {
 
 
                 let c_url = href + "/choice_result"
@@ -155,8 +175,8 @@ function process_blocking() {
                 //如果已经投过票了,则跳过这个问题
                 if (c_req.responseText.indexOf(self_name) > -1) {
                     log("usr:" + usr + " skip quesion because I have selected")
-                    add_block(block)
 
+                    add_block(block)
                     return
                 }
             }
@@ -197,22 +217,51 @@ function process_blocking() {
                 //得到用户页面
                 let txt = evt.srcElement.response
                 let page = to_jq(txt)
+                let vote = page.find("#js-choice_vote")
+                let select_urls = []
+
+                //保存选择项
+                if (vote.length > 0) {
+                    let div = $("<div>")
+
+                    //获得投票选项
+                    vote.find(".list-group-item").each(function () {
+                        // let clone = $(this).clone()
+                        // clone.css("display", "inline-block")
+                        // div.append(clone)
+                        let link=jq_must_find(this, "a")
+                        let url = link.attr("href")
+                        if (url == "") {
+                            //设置keyword
+                            jq_must_find(page,"#question_keyword_id").val(link.attr("data-url").match(/\d+$/))
+                            let form=jq_must_find(page,"form[data-text-correction-form]")
+                            url=q_url+"/content_corrections?"+form.serialize()+"&commit=Submit%20correction"
+                            log("href:"+href)
+                        }
+                        select_urls.push(url)
+                    })
+                    // select_urls = div.get(0).outerHTML
+                }
 
                 let wrp = $(page.find(".chat_content_wrapper").get(0))
                 //https://hinative.com/en-US/questions/15939889/choice_result
-
 
                 //获得用户profileurl
                 let p_url = wrp.find("a").get(0).href
                 let usr1 = usr
 
+                q_info.select_urls = select_urls
+                storage.set({ questions_info: questions_info })
+
                 get_user_info(p_url, usr1).then(function (buffer) {
+
                     let b_block1 = b_block
                     let buffer1 = buffer
 
                     if (b_block1.painted == true) {
                         return
                     }
+
                     //保存了基本信息和用户地址
                     result_buffer[buffer.usr] = buffer1
 
@@ -255,6 +304,9 @@ function process_blocking() {
     } finally {
         blocking = false
     }
+}
+function create_question_info(url) {
+    return { url: url, blocked: false }
 }
 
 //更新缓存到本地
@@ -305,13 +357,13 @@ function add_block(ele, update = true) {
     //如果用户被屏蔽，则隐藏这个提问
     blocked_blocks.add(ele)
     if (update) {
-        let href = $(this).attr("href")
-        blocked_quesions[href] = true
-        storage.set({ "blocked_quesions": blocked_quesions })
+        let href = $(ele).attr("href")
+        questions_info[href].blocked = true
+        storage.set({ "questions_info": questions_info })
     }
 
     if ($("#blocked_blocks").length == 0)
-        $(".country_selector").append("<span id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
+        $(".country_selector").append("<span style='cursor: pointer;' id='blocked_blocks'> blocked quesions count:" + blocked_blocks.length + "</span>")
     else {
         $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size)
     }
@@ -326,10 +378,10 @@ function add_white_list(user_name) {
     storage.set({ "white_list": Array.from(new Set(white_list)) })
 }
 //获得绘制基本信息
-function get_paint_info(txt) {
+function get_paint_info(usr_page) {
 
     //获得反应率以及其他信息
-    let matches = txt.match(/level_\d/)
+    let matches = usr_page.match(/level_\d/)
     let info = {}
 
     let color = "white"
@@ -339,7 +391,7 @@ function get_paint_info(txt) {
     }
 
     //获得questions number
-    let numbers = txt.match(/(?<=font_numbers_large['"]>)[^<]+/g)
+    let numbers = usr_page.match(/(?<=font_numbers_large['"]>)[^<]+/g)
     // log(txt)
     info.q_n = numbers[0]
     info.a_n = numbers[1]
@@ -349,21 +401,53 @@ function get_paint_info(txt) {
 //对需要框框上色
 function do_painting(ele) {
 
+
     //设置一个painted属性
     ele.painted = true
     let usr = jq_must_find(ele, ".username")
     let wrp = jq_must_find(ele, ".username_wrapper")
+    let url = $(ele).attr("href")
+    let q_info = questions_info[url]
     let buffer = result_buffer[usr.text()]
     let info = buffer.info
+    let div=$("<div>")
+
+    let fuki=jq_must_find(ele, ".wrapper_fukidashi")
+    fuki.append(div)
+
+    let q_block=jq_must_find(ele, ".q_block")
+    q_block.css("cursor","pointer")
+    q_block.click(function(){
+        location.href=url
+    })
+
+   
+    if (q_info.select_urls.length > 0) {
+        //画上选择项
+       
+        add_item(0, "Natural")
+        add_item(1, "A little unnatural")
+        add_item(2, "Unnatural")
+        add_item(3, "Don't konw")
+        function add_item(index, title) {
+            let url =   q_info.select_urls[index]
+          
+            let s = $("<span style='border-style: solid;border-width: 1px;margin: 2px;padding: 2px;cursor: pointer;' title='" + title + "'>" + title + "</span>")
+            s.click(function () {
+                // console.log("post:" + url)
+                unsafeWindow.$.post({url:url,dataType:"script"})
+                console.log("$.post(\"" + url + "\")")
+            }
+            )
+            div.append(s)
+        }
+    }
 
     //确认是否需要自动隐藏
     let is_auto_blocked = false
-
     let color = "white"
-
     //获得用户profile rate
     let rate = info.rate
-
     switch (rate) {
         case "level_1":
             color = "red"
@@ -381,6 +465,14 @@ function do_painting(ele) {
             break;
     }
 
+    let cwrp = jq_must_find(ele, ".chat_content_wrapper")
+    let cls = $("<span style='display: inline-block;float: right; cursor: pointer;' title='close this question'>✕</span>")
+    cls.click(function (e) {
+        e.preventDefault()
+        add_block(ele, true)
+    })
+    cwrp.prepend(cls)
+
 
     //添加色彩显示
     wrp.append("<span class='rate_badge' style=\"display:inline-block;width:16px;height:16px;border: darkblue;border-style: dotted;border-width: 1px;border-radius:8px;background-color:" + color + "\"></span>")
@@ -391,7 +483,7 @@ function do_painting(ele) {
     usr.get(0).style.fontWeight = "bold"
     usr.get(0).style.color = "black"
     usr.get(0).style.fontSize = "25"
-    wrp.append($("<span>" + " Q:" + q_n + " A:" + a_n + "</span>"))
+    wrp.append($("<span style='cursor: pointer;'>" + " Q:" + q_n + " A:" + a_n + "</span>"))
 
 
     //如果没有划过feture answer则画一次
@@ -402,13 +494,12 @@ function do_painting(ele) {
     //自动屏蔽
     if (is_auto_blocked && auto_block)
         block_user(usr.text())
-
     let in_white_list = white_list.indexOf(usr.text()) != -1
     //添加屏蔽选项
     let a = null
     //如果不存在于白名单则添加屏蔽选项
     if (!in_white_list) {
-        a = $("<a class='block' title='block this user'>❌</a>")
+        a = $("<span class='block' style='cursor:pointer' title='block this user'>❌</span>")
         a.before("&nbsp;")
         a.click(function (e) {
             e.preventDefault()
@@ -422,7 +513,7 @@ function do_painting(ele) {
     }
 
     //添加白名单选项
-    a = $("<a class='white' title='add this user to white list'>" + (in_white_list ? "💗" : "💚") + "</a>")
+    a = $("<span class='white'  style='cursor:pointer' title='add this user to white list'>" + (in_white_list ? "💗" : "💚") + "</span>")
     a.before("&nbsp;")
     a.click(function (e) {
         e.preventDefault()
@@ -449,7 +540,7 @@ function do_featrued_painting(ele) {
     let f = result_buffer[usr.text()].featured_answers
 
     let rate = (f / a).toFixed(2)
-    wrp.append("<span class='rate_badage'> rate:" + ((a != 0) ? rate : "No data!") + "</span>")
+    wrp.append("<span  style='cursor: pointer;' class='rate_badage'> rate:" + ((a != 0) ? rate : "No data!") + "</span>")
     if (rate <= block_rate_below) {
         //如果采纳率为0，则标红
         jq_must_find(ele, ".rate_badge", false).css("background-color", "red")
@@ -503,6 +594,7 @@ function each_user_blocks(username, handler) {
 function get_user_info(p_url, usr) {
     let p_url1 = p_url
     let usr1 = usr
+    // let qi=q_info
     return new Promise(resolve => {
         request_get(p_url, function (evt1) {
             let txt = evt1.srcElement.response
@@ -552,7 +644,7 @@ function get_user_feartured_answer(p_url, buffer) {
                 let page = to_jq(qtxt)
                 //获得第一页回答的问题
                 let blocks = page.find(".d_block:not(:has(.has_no_answer))")
-       
+
                 function check_out() {
                     log("usr:" + buffer.usr + " index:" + index + " blocks_count:" + blocks_count + " buffer.answers:" + buffer.answers + " buffer.featured_answers:" + buffer.featured_answers)
                     if (resolved == page_count && blocks_count == buffer.answers) {
@@ -571,9 +663,9 @@ function get_user_feartured_answer(p_url, buffer) {
                     // }
                     // return false
                 }
-                
+
                 //最后一页了,则取消继续查询
-                if ( page.find(".d_block").length == 0 || blocks.length==0) {
+                if (page.find(".d_block").length == 0 || blocks.length == 0) {
                     resolved++;
                     if (check_out()) {
                         return
@@ -585,7 +677,7 @@ function get_user_feartured_answer(p_url, buffer) {
                 blocks.each(function () {
                     let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim()
                     log("usr-question:" + buffer.usr + " badge:" + badge)
-          
+
                     blocks_count++;
                     let fq_url = this.href
 

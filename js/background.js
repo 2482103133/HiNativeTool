@@ -33,15 +33,23 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "white_list": [],
     "self_name":(()=>{})(),
     "self_url":(()=>{})(),
-    "blocked_quesions":{},
+    "questions_info":{},
     "request_interval":200,
     "fap_count":2,
     "old_question_age":7,
-    "rearrange":true
+    "rearrange":true,
+    "questions_info":{}
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){
     // alert("preloaded")
     execute_script("window.data_loaded=true")
   })
+
+  $.ajaxSetup({
+    crossDomain: true,
+    xhrFields: {
+        withCredentials: true
+    }
+});
 })

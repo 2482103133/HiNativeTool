@@ -119,9 +119,10 @@ function set_binding(key1, check1) {
 
 
 function clear_cache() {
-    storage.set({ "result_buffer": {} }, function () {
+    storage.set({ "result_buffer": {} , "questions_info": {} }, function () {
         log("cache cleared!")
     })
+
 }
 
 function popup_update_cache() {

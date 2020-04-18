@@ -31,6 +31,8 @@ result = String.raw`
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_listValues
+// @grant        GM_xmlhttpRequest 
+// @grant        unsafeWindow 
 // @require      http://code.jquery.com/jquery-3.4.1.min.js
 // ==/UserScript==
 //The file is auto created with script, changes might get lost!

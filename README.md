@@ -14,6 +14,7 @@ __已添加TamperMonkey插件支持!__
 7. 允许屏蔽采纳率低于某个值（0~1）的用户的提问，可以在popup中更改  
 8. 允许设置单条数据有效时间，默认是7天，可以在popup中更改 
 9. 自动过滤已经选择过的"does this sound natural"问题,这个官方没有给出选项.
+10. 为"does this sound natural"问题在问题列表界面添加快速选择入口
 
 ### 下载与使用  
 > *由于缺那5个$，所以暂时只能以离线的方式呈现.*
@@ -39,7 +40,7 @@ __已添加TamperMonkey插件支持!__
 [0]:https://github.com/2482103133/HiNativeTool/raw/HinativeTool
 没有显示红色的圈圈是因为已经被自动屏蔽掉了~  
 ![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview.png)  
-![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview1.png)  
+![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview5.png)  
 ![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview2.png)  
 ![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview3.png)  
 ![Alt preview](https://github.com/2482103133/HiNativeTool/raw/HinativeTool/images/preview4.png)  
