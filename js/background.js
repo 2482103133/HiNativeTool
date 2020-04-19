@@ -38,7 +38,9 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
     "fap_count":2,
     "old_question_age":7,
     "rearrange":true,
-    "questions_info":{}
+    "questions_info":{},
+    "languages":{},
+    "selected_languages":[],
   }
   //数据加载完后添加全局变量data_loaded
   preload(obj).then(function(){

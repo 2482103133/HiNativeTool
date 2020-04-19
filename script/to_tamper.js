@@ -89,7 +89,7 @@ function generate() {
 //   for (const c of result) {
 //     process.stdout.write(c);
 //   }
-  result = result.replace(/;[\r\n]+/g, ";//this is generated code don't edit\n");
+  result = result.replace(/;[\r\n]+/g, ";/*this is generated code don't edit*/\n");
 
   fs.writeFileSync(to_url, result);
 }

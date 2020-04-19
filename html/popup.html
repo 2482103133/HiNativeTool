@@ -28,6 +28,7 @@
 
     .numer_input {
       text-align: right;
+      
       width: 120px;
     }
 
@@ -115,6 +116,14 @@
         </td>
       </tr>
       <tr>
+        <td>Add language:</td>
+        <td>
+          <input id="add_language" type="button" value="➕"
+          title="Clear buffered responses,you might need to re-reqeust those data!" class='button'></input>
+          <select id="languages"></select>
+        </td>
+      </tr>
+      <tr>
         <td> Clear cached data:</td>
         <td><input id="cached" type="button" value="🚮"
             title="Clear buffered responses,you might need to re-reqeust those data!" class='button'></input><br /></td>
@@ -142,6 +151,19 @@
             <tbody id="white_list" class="list_table">
             </tbody>
           </table>
+        </td>
+      </tr>
+      <tr>
+        <td class="list_table_container">
+          <table>
+            <thead>
+              <tr>Selected Languages</tr>
+            </thead>
+            <tbody id="selected_languages" class="list_table">
+            </tbody>
+          </table>
+        </td>
+        <td>
         </td>
       </tr>
     </tbody>

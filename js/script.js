@@ -23,18 +23,24 @@ $(document).ready(function () {
   window.filling_blocks_count = 0;
   //存放请求的队列
   window.request_queue = [];
+
+  window.only_answered=$("input[data-questions-not-answered-only]").is(":checked")
   //请求最小间隔，以免给hinative服务器造成负担
   // request_interval
   //开启请求循环
   start_request_interval();
-
+  
+  
+  window.first_loaded = true;
   //监听blocks变化
   setInterval(() => {
+   
     if (
       !(typeof data_loaded === "undefined") &&
       data_loaded &&
       extension_enabled
     ) {
+      process_multilanguage()
       process_blocking();
       process_scroll();
     }
@@ -70,6 +76,82 @@ $(document).ready(function () {
   };
 });
 
+function process_multilanguage(){
+    
+    if(first_loaded&& $("li[data-next-page]>a").length>0){
+        intercept();
+        get_questions().remove();
+        $("li[data-next-page]>a").attr(
+          "href",
+          $("li[data-next-page]>a")
+            .get(0)
+            .href.replace(/page=\d+/g, "page=1")
+        );
+        first_loaded=false
+    }
+
+}
+//拦截请求,并添加请求
+function intercept() {
+  let origin = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (...args) {
+    let url = args[1];
+    this.__url = url;
+ 
+    return origin.apply(this, args);
+  };
+  var accessor = Object.getOwnPropertyDescriptor(
+    XMLHttpRequest.prototype,
+    "response"
+  );
+  Object.defineProperty(XMLHttpRequest.prototype, "response", {
+    get: function () {
+      let response = accessor.get.call(this);
+    
+      if (
+        typeof this.__auto === "undefined" &&
+        this.__url.indexOf("questions?") > 0
+      ) {
+        let url = this.__url.split("?")[0];
+        let params = this.__url.split("?")[1];
+        let page = params.match(/(?<=page=)\d+/)[0];
+        let lang_id = params.match(/(?<=language_id=)\d+/)[0];
+
+        let append = "";
+        for (const lang of selected_languages) {
+          if (lang == lang_id) continue;
+
+          let url1 = url + "?language_id=" + lang + "&page=" + page;
+          console.log("appended request:" + url1);
+          let req = request_get(url1, null, false, true);
+          append = append + req.responseText;
+        }
+        let apd=to_jq(append);
+        $(response.body).append(apd);
+
+        apd=$(response.body)
+        //把已经回答的问题去掉
+        if(only_answered)
+        {
+          jq_must_find(apd,".d_block").each(function(){
+              
+                let no_anser= $(this).find(".has_no_answer")
+                if(no_anser.length==0){
+                    $(this).remove()
+                }
+            })
+        }
+      }
+ 
+      return response;
+    },
+    set: function (str) {
+   
+      return accessor.set.call(this, str);
+    },
+    configurable: true,
+  });
+}
 //自动下拉以刷新提问
 function process_scroll() {
   if ($("html").get(0).getClientRects()[0].height <= window.innerHeight) {
@@ -78,7 +160,7 @@ function process_scroll() {
     let tmp = $("html").get(0).scrollTop;
     var div = $(
       "<div style='display:block;height:" +
-        window.innerHeight +
+        window.innerHeight*2 +
         "px;width:20px'>神奇的伸缩棒</div>"
     );
     $("body").append(div);
@@ -133,6 +215,25 @@ function process_blocking() {
       }
     })();
 
+    if (typeof languages === "undefined" || languages.length == 0) {
+      let req = request_get(self_url + "/edit", null, false);
+      // console.log(req.responseText)
+      let options = to_jq(req.responseText).find(
+        ".native_language_select>option"
+      );
+      let langs = {};
+      options.each(function () {
+        langs[$(this).val()] = $(this).text();
+      });
+
+      storage.set({
+        languages: langs,
+      });
+
+      log("get languages:");
+      log(langs);
+    }
+
     //遍历每个回答
     get_questions().each(function () {
       process(this);
@@ -170,8 +271,6 @@ function process(ele) {
       questions_info: questions_info,
     });
   }
-  
-  
 
   if (
     new Date().getTime() -
@@ -409,12 +508,12 @@ function add_block(ele, update = true, is_auto = true) {
 
   if ($("#blocked_blocks").length == 0)
     $(".country_selector").append(
-      "<span style='cursor: pointer;' id='blocked_blocks'> blocked quesions count:" +
+      "<span style='cursor: pointer;' > blocked questions count:<b id='blocked_blocks'>" +
         blocked_blocks.length +
-        "</span>"
+        "</b></span>"
     );
   else {
-    $("#blocked_blocks").text("blocked quesions count:" + blocked_blocks.size);
+    $("#blocked_blocks").text(blocked_blocks.size);
   }
 
   log("已隐藏用户问题:" + usr.text());
@@ -685,6 +784,7 @@ function check_block(ele, why) {
     return false;
   }
   let q_info = questions_info[$(ele).attr("href")];
+
   if (typeof q_info === "undefined") {
   } else {
     var blockable = null;
@@ -877,8 +977,11 @@ function jq_must_find(ele, selector, force = true) {
 }
 
 //发送一次get请求
-function request_get(url, callback, async = true) {
-  let req = new XMLHttpRequest();
+function request_get(url, callback, async = true, auto = true) {
+ 
+  let req =new XMLHttpRequest();
+
+  req.__auto = auto;
   if (callback) req.addEventListener("load", callback);
   req.open("GET", url, async);
   // req.setRequestHeader('User-Agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36')
