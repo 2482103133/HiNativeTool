@@ -24,23 +24,23 @@ $(document).ready(function () {
   //存放请求的队列
   window.request_queue = [];
 
-  window.only_answered=$("input[data-questions-not-answered-only]").is(":checked")
+  window.only_answered = $("input[data-questions-not-answered-only]").is(
+    ":checked"
+  );
   //请求最小间隔，以免给hinative服务器造成负担
   // request_interval
   //开启请求循环
   start_request_interval();
-  
-  
+
   window.first_loaded = true;
   //监听blocks变化
   setInterval(() => {
-   
     if (
       !(typeof data_loaded === "undefined") &&
       data_loaded &&
       extension_enabled
     ) {
-      process_multilanguage()
+      process_multilanguage();
       process_blocking();
       process_scroll();
     }
@@ -76,20 +76,18 @@ $(document).ready(function () {
   };
 });
 
-function process_multilanguage(){
-    
-    if(first_loaded&& $("li[data-next-page]>a").length>0){
-        intercept();
-        get_questions().remove();
-        $("li[data-next-page]>a").attr(
-          "href",
-          $("li[data-next-page]>a")
-            .get(0)
-            .href.replace(/page=\d+/g, "page=1")
-        );
-        first_loaded=false
-    }
-
+function process_multilanguage() {
+  if (first_loaded && $("li[data-next-page]>a").length > 0) {
+    intercept();
+    get_questions().remove();
+    $("li[data-next-page]>a").attr(
+      "href",
+      $("li[data-next-page]>a")
+        .get(0)
+        .href.replace(/page=\d+/g, "page=1")
+    );
+    first_loaded = false;
+  }
 }
 //拦截请求,并添加请求
 function intercept() {
@@ -97,7 +95,7 @@ function intercept() {
   XMLHttpRequest.prototype.open = function (...args) {
     let url = args[1];
     this.__url = url;
- 
+
     return origin.apply(this, args);
   };
   var accessor = Object.getOwnPropertyDescriptor(
@@ -107,7 +105,7 @@ function intercept() {
   Object.defineProperty(XMLHttpRequest.prototype, "response", {
     get: function () {
       let response = accessor.get.call(this);
-    
+
       if (
         typeof this.__auto === "undefined" &&
         this.__url.indexOf("questions?") > 0
@@ -126,27 +124,24 @@ function intercept() {
           let req = request_get(url1, null, false, true);
           append = append + req.responseText;
         }
-        let apd=to_jq(append);
+        let apd = to_jq(append);
         $(response.body).append(apd);
 
-        apd=$(response.body)
+        apd = $(response.body);
         //把已经回答的问题去掉
-        if(only_answered)
-        {
-          jq_must_find(apd,".d_block").each(function(){
-              
-                let no_anser= $(this).find(".has_no_answer")
-                if(no_anser.length==0){
-                    $(this).remove()
-                }
-            })
+        if (only_answered) {
+          jq_must_find(apd, ".d_block").each(function () {
+            let no_anser = $(this).find(".has_no_answer");
+            if (no_anser.length == 0) {
+              $(this).remove();
+            }
+          });
         }
       }
- 
+
       return response;
     },
     set: function (str) {
-   
       return accessor.set.call(this, str);
     },
     configurable: true,
@@ -160,7 +155,7 @@ function process_scroll() {
     let tmp = $("html").get(0).scrollTop;
     var div = $(
       "<div style='display:block;height:" +
-        window.innerHeight*2 +
+        window.innerHeight * 2 +
         "px;width:20px'>神奇的伸缩棒</div>"
     );
     $("body").append(div);
@@ -244,7 +239,7 @@ function process_blocking() {
 }
 
 function process(ele) {
-  let href = $(ele).attr("href");
+  let href = get_href(ele);
   let b_block = $(ele).get(0);
   let usr = jq_must_find(ele, ".username").text();
   let wrapper = jq_must_find(ele, ".username_wrapper");
@@ -498,7 +493,7 @@ function add_block(ele, update = true, is_auto = true) {
   //如果用户被屏蔽，则隐藏这个提问
   blocked_blocks.add(ele);
   if (update) {
-    let href = $(ele).attr("href");
+    let href = get_href(ele);
     questions_info[href].blocked = true;
     questions_info[href].is_auto = is_auto;
     storage.set({
@@ -559,7 +554,7 @@ function do_painting(ele) {
   ele.painted = true;
   let usr = jq_must_find(ele, ".username");
   let wrp = jq_must_find(ele, ".username_wrapper");
-  let url = $(ele).attr("href");
+  let url = get_href(ele);
   let q_info = questions_info[url];
   let buffer = result_buffer[usr.text()];
   let info = buffer.info;
@@ -622,8 +617,8 @@ function do_painting(ele) {
       s.click(function () {
         var b = ele;
         $(b).hide();
-        // console.log("post:" + url)
-        unsafeWindow.$.post({
+
+        mode.unsafeWindow.$.post({
           url: url,
           dataType: "script",
           complete: function (xhr) {
@@ -784,7 +779,7 @@ function check_block(ele, why) {
     return false;
   }
 
-  let q_info = questions_info[$(ele).attr("href")];
+  let q_info = questions_info[get_href(ele)];
   if (typeof q_info === "undefined") {
   } else {
     var blockable = null;
@@ -812,6 +807,11 @@ function each_user_blocks(username, handler) {
       handler.call(this);
     }
   });
+}
+
+function get_href(ele) {
+  let href = $(ele).attr("href");
+  return href ? href.split("?")[0] : {}[0];
 }
 
 //获得用户提问，回应率，回答数
@@ -926,7 +926,7 @@ function get_user_feartured_answer(p_url, buffer) {
           log("usr-question:" + buffer.usr + " badge:" + badge);
 
           blocks_count++;
-          let fq_url = this.href;
+          let fq_url = get_href(this);
 
           //请求某一个问题的页面
           request_get(fq_url, function (evt) {
@@ -978,8 +978,7 @@ function jq_must_find(ele, selector, force = true) {
 
 //发送一次get请求
 function request_get(url, callback, async = true, auto = true) {
- 
-  let req =new XMLHttpRequest();
+  let req = new XMLHttpRequest();
 
   req.__auto = auto;
   if (callback) req.addEventListener("load", callback);

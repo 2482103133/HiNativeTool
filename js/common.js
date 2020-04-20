@@ -55,7 +55,8 @@ Mode.prototype = {
   Storage: null,
   OnInstalled: function (callback) { },
   OnPageUpdate: function (callback) { },
-  ExecuteScript: function (script, callback) { }
+  ExecuteScript: function (script, callback) { },
+  unsafeWindow:window
 }
 Mode.prototype.constructor = Mode
 
@@ -64,7 +65,7 @@ window. TMMode = function () {
   Mode.call(this)
   this.Mode = "TM"
   this.Storage = new TMStorage()
-
+  this.unsafeWindow=unsafeWindow
   this.OnPageUpdated = function (callback) {
     callback.call(this)
   }
