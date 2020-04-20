@@ -780,11 +780,11 @@ function check_block(ele, why) {
   }
   //如果是黑名单用户则直接屏蔽
   if (blocked_users.indexOf(usr.text()) > -1) {
-    add_block(ele, false, true);
+    add_block(ele, false, false);
     return false;
   }
-  let q_info = questions_info[$(ele).attr("href")];
 
+  let q_info = questions_info[$(ele).attr("href")];
   if (typeof q_info === "undefined") {
   } else {
     var blockable = null;
