@@ -80,7 +80,7 @@ function generate() {
 `;
   // console.log(result)
 
-  
+  // request_get()
   var len = result.match(/\n/g).length;
 //   var len = ";\n;\n;\n".match(/;\n/g).length;
 //   console.log( result.indexOf(";\n"));
