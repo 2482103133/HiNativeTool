@@ -10,7 +10,6 @@ $(document).ready(function () {
   //被屏蔽的用户列表
   // blocked_users = []
 
-  window.last_blocks_count = 0;
   //现在是否正在blocking过程中
   window.blocking = false;
   //新用户最大提问数
@@ -32,6 +31,8 @@ $(document).ready(function () {
   //开启请求循环
   start_request_interval();
 
+  get_info()
+
   window.first_loaded = true;
   //监听blocks变化
   setInterval(() => {
@@ -45,6 +46,8 @@ $(document).ready(function () {
       process_scroll();
     }
   }, 200);
+
+  
 
   if (rearrange) {
     $("main").append(
@@ -80,6 +83,7 @@ function process_multilanguage() {
   if (first_loaded && $("li[data-next-page]>a").length > 0) {
     intercept();
     get_questions().remove();
+ 
     $("li[data-next-page]>a").attr(
       "href",
       $("li[data-next-page]>a")
@@ -95,13 +99,14 @@ function intercept() {
   XMLHttpRequest.prototype.open = function (...args) {
     let url = args[1];
     this.__url = url;
-
+    
     return origin.apply(this, args);
   };
   var accessor = Object.getOwnPropertyDescriptor(
     XMLHttpRequest.prototype,
     "response"
   );
+
   Object.defineProperty(XMLHttpRequest.prototype, "response", {
     get: function () {
       let response = accessor.get.call(this);
@@ -150,20 +155,25 @@ function intercept() {
 //自动下拉以刷新提问
 function process_scroll() {
   if ($("html").get(0).getClientRects()[0].height <= window.innerHeight) {
+
+    
     log("auto scroll! ");
 
+    while($("html").get(0).getClientRects()[0].height <= window.innerHeight)
+    {
+     
+      var div = $(
+        "<div class='scroll_bar' style='display:block;height:" +
+          window.innerHeight * 2 +
+          "px;width:20px'>神奇的伸缩棒</div>"
+      );
+      $("body").append(div);
+    }
     let tmp = $("html").get(0).scrollTop;
-    var div = $(
-      "<div style='display:block;height:" +
-        window.innerHeight * 2 +
-        "px;width:20px'>神奇的伸缩棒</div>"
-    );
-    $("body").append(div);
-
     $("html").get(0).scrollTop = 0;
     $("html").get(0).scrollTop = $("html").get(0).scrollHeight;
     $("html").get(0).scrollTop = tmp;
-    div.remove();
+    $(".scroll_bar").remove();
     log("ClientRectsHeight:" + $("html").get(0).getClientRects()[0].height);
     log("window.innerHeight:" + window.innerHeight);
   }
@@ -174,63 +184,61 @@ function get_questions() {
   return $(".d_block");
 }
 
+function get_info(){
+//得到自身信息
+(function get_self_username() {
+  if (typeof self_name === "undefined") {
+    let p_url = $(".spec_nav_profile>a").get(0).href;
+    let req = request_get(p_url, null, false);
+    let name = to_jq(req.responseText)
+      .find(".owner_name>span")
+      .text()
+      .trim();
+    storage.set({
+      self_name: name,
+    });
+    storage.set({
+      self_url: p_url,
+    });
+    log("get self name:" + name + " self url:" + p_url);
+  }
+})();
+
+if (typeof languages === "undefined" || languages.length == 0) {
+  let req = request_get(self_url + "/edit", null, false);
+  // console.log(req.responseText)
+  let options = to_jq(req.responseText).find(
+    ".native_language_select>option"
+  );
+  let langs = {};
+  options.each(function () {
+    langs[$(this).val()] = $(this).text();
+  });
+
+  storage.set({
+    languages: langs,
+  });
+
+  log("get languages:");
+  log(langs);
+}
+}
+
 //主要的执行过程
 function process_blocking() {
-  if (get_questions().length == last_blocks_count) {
-    //每两百毫秒执行一次,判断是否需要新的查询
-    return;
-  }
 
   if (blocking) {
     log("blokcing");
     return;
   }
-
   //阻塞标示，以免两个interval同时运行，造成多次paint
   blocking = true;
-  last_blocks_count = get_questions().length;
 
   try {
-    //得到自身信息
-    (function get_self_username() {
-      if (typeof self_name === "undefined") {
-        let p_url = $(".spec_nav_profile>a").get(0).href;
-        let req = request_get(p_url, null, false);
-        let name = to_jq(req.responseText)
-          .find(".owner_name>span")
-          .text()
-          .trim();
-        storage.set({
-          self_name: name,
-        });
-        storage.set({
-          self_url: p_url,
-        });
-        log("get self name:" + name + " self url:" + p_url);
-      }
-    })();
-
-    if (typeof languages === "undefined" || languages.length == 0) {
-      let req = request_get(self_url + "/edit", null, false);
-      // console.log(req.responseText)
-      let options = to_jq(req.responseText).find(
-        ".native_language_select>option"
-      );
-      let langs = {};
-      options.each(function () {
-        langs[$(this).val()] = $(this).text();
-      });
-
-      storage.set({
-        languages: langs,
-      });
-
-      log("get languages:");
-      log(langs);
-    }
-
+  
     //遍历每个回答
     get_questions().each(function () {
+      if(this.processed!=true)
       process(this);
     });
   } finally {
@@ -239,11 +247,8 @@ function process_blocking() {
 }
 
 function process(ele) {
-  let href = get_href(ele);
-  let b_block = $(ele).get(0);
-  let usr = jq_must_find(ele, ".username").text();
-  let wrapper = jq_must_find(ele, ".username_wrapper");
 
+  let b_block = $(ele).get(0);
   //用 div替换a
   if (b_block.outerHTML.startsWith("<a")) {
     let newDiv = $(
@@ -251,7 +256,13 @@ function process(ele) {
     );
     $(b_block).replaceWith(newDiv);
     b_block = newDiv.get(0);
+    ele=b_block
   }
+  let href = get_href(ele);
+  let usr = jq_must_find(ele, ".username").text();
+  let wrapper = jq_must_find(ele, ".username_wrapper");
+  ele.processed=true
+  
 
   //更新问题信息到本地
   let q_info = questions_info[href];
@@ -310,6 +321,7 @@ function process(ele) {
       return;
     }
   }
+  
 
   //如果该用户没加载过,或者用户数据过期了就继续加载数据，否则重画
   if (typeof result_buffer[usr] === "undefined") {
@@ -337,6 +349,13 @@ function process(ele) {
     loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`;
     loading = $(loading);
     wrapper.append(loading);
+    
+  }
+
+  function success() {
+    //更新数据到本地
+    update_result_buffer();
+    loading.remove();
   }
 
   //发送请求
@@ -375,7 +394,6 @@ function process(ele) {
         }
         select_urls.push(url);
       });
-      // select_urls = div.get(0).outerHTML
     }
 
     let wrp = $(page.find(".chat_content_wrapper").get(0));
@@ -402,15 +420,14 @@ function process(ele) {
 
       //保存了基本信息和用户地址
       result_buffer[buffer.usr] = buffer1;
-
-      if (!need_featured_answer) success();
-
       do_painting(b_block1);
 
-      if (need_featured_answer == true) {
+      if (!need_featured_answer) {
+        success();
+      }else{
         get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
+          success();
           log("featrued loaded:" + buffer.usr);
-
           result_buffer[buffer.usr] = buffer;
           //将所有同名的block都加上rate
           get_questions().each(function () {
@@ -419,20 +436,15 @@ function process(ele) {
               if (a_usr.text() == buffer.usr) {
                 do_featrued_painting(this);
               }
+              
             }
           });
-
-          success();
         });
       }
     });
   });
 
-  function success() {
-    //更新数据到本地
-    update_result_buffer();
-    loading.remove();
-  }
+  
 }
 
 function create_question_info(url) {
@@ -1050,4 +1062,10 @@ function update_cache() {
     update_result_buffer();
     alert("用户信息更新完成！");
   });
+}
+
+function append_page(index){
+  let feed=jq_must_find(".question_feeds")
+  feed.append
+ 
 }

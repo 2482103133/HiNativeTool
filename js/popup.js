@@ -1,7 +1,9 @@
 function setup_popup() {
   //清空缓存的用户数据
   $("#cached").click(function () {
+    
     clear_cache();
+    mode.ExecuteScript({code:"location.reload()"})
   });
   //更新缓存的用户数据
   $("#update").click(function () {
