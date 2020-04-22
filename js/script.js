@@ -46,6 +46,7 @@ $(document).ready(function () {
       process_multilanguage();
       process_blocking();
       process_scroll();
+
       let dqf = $(".body[data-questions-feed]");
       var sorted = dqf.find(".d_block").sort(function (a, b) {
         return (
@@ -68,22 +69,21 @@ $(document).ready(function () {
         $("#time_line").remove();
         for (const ele of sorted) {
           //七天前的消息线
-        if (
-          $("#time_line").length == 0 &&
-          $(".body[data-questions-feed]").has(ele) &&
-          new Date().getTime() -
-            new Date(jq_must_find(ele, ".timeago").get(0).title).getTime() >
-            86400 * 1000 * validity_duration
-        ) {
-          window.time_line = $(
-            "<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" +
-              validity_duration +
-              "天前的消息</div></div>"
-          );
-          $(ele).before(time_line);
+          if (
+            $("#time_line").length == 0 &&
+            $(".body[data-questions-feed]").has(ele) &&
+            new Date().getTime() -
+              new Date(jq_must_find(ele, ".timeago").get(0).title).getTime() >
+              86400 * 1000 * validity_duration
+          ) {
+            window.time_line = $(
+              "<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" +
+                validity_duration +
+                "天前的消息</div></div>"
+            );
+            $(ele).before(time_line);
+          }
         }
-        }
-        
       }
     }
   }, 200);
@@ -92,7 +92,7 @@ $(document).ready(function () {
     $("main").append(
       "<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>"
     );
-    $(".l_sidebar_container").remove();
+
     let q = $(
       "<li><a  title='my questions' href='" +
         window.self_url +
@@ -106,16 +106,64 @@ $(document).ready(function () {
 
     $(".nav_activity").after(q);
     $(".nav_activity").after(a);
+
+    $(".l_sidebar_container").empty();
+    while (!data_loaded) {}
+    let container=$(".l_sidebar_container")
+    container.append("<div class='feedback_modal'>我未被回答的问题</div>")
+
+    if (typeof self_url !== "undefined") {
+      let ctr=$(".l_sidebar_container")
+      ctr.append()
+      traverse_user_questions(
+        self_url,
+        0,
+        ":has(.has_no_answer)",
+        function (txt, block) {
+          let page=to_jq(txt)
+          //如果没有回答 也没有人选择回答,就继续
+          if(page.find(".div[data-answer-id]").length==0)
+          {
+            let has_answer=false
+           
+            $(page.find(".count")).each(function(){
+              if($(this).find("p").find("span").text().trim()!="0")
+              has_answer=true
+            })
+            if(!has_answer)
+            {
+              return
+            }
+          }
+          console.log("find!");
+          let ele=$(block).clone()
+          let href=$(block).attr("href")
+          let wrapper=$("<div class='wrapper wrapper_fukidashi' style='border: solid;border-width: 1px;margin-bottom: 20px;border-radius: 10px;'></div>")
+          let ques=jq_must_find(ele,".mod_question_content_decorated")
+          let word=jq_must_find(ques,".keyword")
+          
+          ques.append(jq_must_find(ele,".timeago"))
+          word.css("cursor","pointer")
+        
+          word.click(function(){
+            location.href=href
+          })
+          wrapper.css("borderColor","#2c2d30")
+          wrapper.append(ques)
+          $(".l_sidebar_container").append(wrapper);
+        }
+      );
+    }
   }
 
   //每三分钟不活动刷新一次
-  var timeout;
-  document.onmousemove = function () {
-    clearTimeout(timeout);
-    timeout = setTimeout(function () {
-      location.reload();
-    }, 60 * 1000 * 3);
-  };
+  // var timeout;
+  // document.onmousemove = function () {
+  //   clearTimeout(timeout);
+  //   timeout = setTimeout(function () {
+  //     location.reload();
+  //   }, 60 * 1000 * 3);
+  // };
 });
 
 function process_multilanguage() {
@@ -222,7 +270,7 @@ function process_scroll() {
 
 //获得所有问题块
 function get_questions() {
-  return $(".d_block");
+  return $(".l_main_container .d_block");
 }
 
 function get_info() {
@@ -310,8 +358,6 @@ function process(ele) {
       questions_info: questions_info,
     });
   }
-
-  
 
   // //如果该问题已经被屏蔽,就不用画
   // if (q_info.blocked) {
@@ -448,7 +494,7 @@ function process(ele) {
       if (!need_featured_answer) {
         success();
       } else {
-        get_user_feartured_answer(p_url, buffer1).then(function (buffer) {
+        get_user_featured_answer(p_url, buffer1).then(function (buffer) {
           success();
           log("featrued loaded:" + buffer.usr);
           result_buffer[buffer.usr] = buffer;
@@ -827,9 +873,11 @@ function each_user_blocks(username, handler) {
 
 function get_href(ele) {
   let href = $(ele).attr("href");
-  return href ? href.split("?")[0] : {}[0];
+  return get_href_without_params(href);
 }
-
+function get_href_without_params(href){
+  return href ? href.split("?")[0].trim() : {}[0];
+}
 //获得用户提问，回应率，回答数
 function get_user_info(p_url, usr) {
   let p_url1 = p_url;
@@ -849,28 +897,50 @@ function get_user_info(p_url, usr) {
     });
   });
 }
+function link_equal(link1,link2)
+{
+  return get_tail_number( get_href_without_params(link1))==get_tail_number( get_href_without_params(link2))
+}
+function get_tail_number(str)
+{
+  let match=str.match(/\d+$/)
+  if(match){
+    return match[0]
+  }
+  return null
+}
 
-// 获得用户采纳情况信息
-function get_user_feartured_answer(p_url, buffer) {
-  let buffer1 = buffer;
+function traverse_user_questions(
+  p_url,
+  count,
+  block_selector = "",
+  page_loaded
+) {
+  log("get user_questions:" + p_url);
   let p_url1 = p_url;
-  let page_count = fap_count;
+  let page_count = count;
+  //如果设置为0则代表遍历所有问题
+  if(page_count==0)
+  {
+    for (const usr in result_buffer) {
+      if (result_buffer.hasOwnProperty(usr)) {
+        const buffer = result_buffer[usr];
+        if( link_equal(buffer.profile_url,p_url) )
+        {
+          page_count=Math.ceil(buffer.info.q_n/10)
+        }
+      }
+    }
+  }
 
   return new Promise((resolve) => {
-    let buffer = buffer1;
     //第一回答页面
     //在这里获得采纳的回答数
     let q_url = p_url1 + "/questions";
     let blocks_count = 0;
-
-    if (typeof buffer.featured_answers === "undefined") {
-      buffer.featured_answers = 0;
-    }
-    if (typeof buffer.answers === "undefined") {
-      buffer.answers = 0;
-    }
-    let current_page = 0;
     let resolved = 0;
+    let answers = 0;
+
     for (let current_page = 0; current_page < page_count; current_page++) {
       request_page(current_page);
     }
@@ -880,51 +950,20 @@ function get_user_feartured_answer(p_url, buffer) {
       if (index > 0) {
         q_url1 = q_url + "?page=" + (index + 1);
       }
-      log("usr:" + buffer.usr + " page:" + q_url1);
-
-      //请求该用户的提问页，用于得到问题的采纳率
+      log("page:" + q_url1);
       request_get(q_url1, function (evt) {
         let qtxt = evt.srcElement.response;
         let page = to_jq(qtxt);
         //获得第一页回答的问题
-        let blocks = page.find(".d_block:not(:has(.has_no_answer))");
-
+        let blocks = page.find(".d_block" + block_selector);
+        
         function check_out() {
-          log(
-            "usr:" +
-              buffer.usr +
-              " index:" +
-              index +
-              " blocks_count:" +
-              blocks_count +
-              " buffer.answers:" +
-              buffer.answers +
-              " buffer.featured_answers:" +
-              buffer.featured_answers
-          );
-          if (resolved == page_count && blocks_count == buffer.answers) {
-            //更新时间
-            buffer.time = new Date().getTime();
-            log(
-              "usr:" +
-                buffer.usr +
-                " blocks_count:" +
-                blocks_count +
-                " buffer.answers:" +
-                buffer.answers +
-                " buffer.featured_answers:" +
-                buffer.featured_answers
-            );
-            resolve(buffer);
+          if (resolved == page_count && blocks_count == answers) {
+            resolve();
             return true;
           } else {
             return false;
           }
-          //当所有的问题都加载完，统计结果，并添加到缓存中
-          // if (blocks_count == buffer.answers && index >= (page_count - 1)) {
-          //     return true
-          // }
-          // return false
         }
 
         //最后一页了,则取消继续查询
@@ -939,28 +978,22 @@ function get_user_feartured_answer(p_url, buffer) {
         //初始化总的有回复的提问数
         blocks.each(function () {
           let badge = $(jq_must_find(this, ".badge_item").get(0)).text().trim();
-          log("usr-question:" + buffer.usr + " badge:" + badge);
-
+          log("badge:" + badge);
           blocks_count++;
           let fq_url = get_href(this);
-
+          let block = this;
           //请求某一个问题的页面
           request_get(fq_url, function (evt) {
             let qtxt1 = evt.srcElement.response;
-            //该问题已被采纳
-            if (qtxt1.indexOf("featured_answer_label") > -1) {
-              buffer.featured_answers++;
-            } else {
-              //未被采纳
-            }
+            //最后一页
+            if(qtxt1.indexOf("class=\"next\"")<0)
 
-            buffer.answers++;
+            page_loaded(qtxt1, block);
             resolved_blocks++;
-
+            answers++;
             if (blocks.length == resolved_blocks) {
               resolved++;
             }
-
             if (check_out()) {
               return;
             }
@@ -968,6 +1001,34 @@ function get_user_feartured_answer(p_url, buffer) {
         });
       });
     }
+  });
+}
+
+// 获得用户采纳情况信息
+function get_user_featured_answer(p_url, buffer) {
+  log("getting user_featured_answer:" + p_url);
+  let buffer1 = buffer;
+  if (typeof buffer.featured_answers === "undefined") {
+    buffer.featured_answers = 0;
+  }
+  if (typeof buffer.answers === "undefined") {
+    buffer.answers = 0;
+  }
+  return new Promise((resolve) => {
+    traverse_user_questions(p_url, fap_count, ":has(.has_no_answer)", function (
+      res
+    ) {
+      //该问题已被采纳
+      if (res.indexOf("featured_answer_label") > -1) {
+        buffer1.featured_answers++;
+      } else {
+        //未被采纳
+      }
+      buffer1.answers++;
+    }).then(function () {
+      buffer.time = new Date().getTime();
+      resolve(buffer);
+    });
   });
 }
 // 将文本转化为jqnodes
@@ -1040,7 +1101,7 @@ function update_cache() {
           result_buffer[buffer2.usr] = buffer2;
 
           if (need_featured_answer == true) {
-            get_user_feartured_answer(p_url, buffer2).then(function (buffer3) {
+            get_user_featured_answer(p_url, buffer2).then(function (buffer3) {
               result_buffer[buffer3.usr] = buffer3;
 
               if (++resolved == count) resolve(result_buffer);
