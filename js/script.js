@@ -122,16 +122,21 @@ $(document).ready(function () {
         function (txt, block) {
           let page=to_jq(txt)
           //如果没有回答 也没有人选择回答,就继续
-          if(page.find(".div[data-answer-id]").length==0)
+          if(page.find("div[data-answer-id]").length>0)
           {
-            let has_answer=false
-           
-            $(page.find(".count")).each(function(){
-              if($(this).find("p").find("span").text().trim()!="0")
-              has_answer=true
-            })
-            if(!has_answer)
-            {
+            if( $(page.find(".count")).length!=0){
+              let has_no_answer=true
+              $(page.find(".count")).each(function(){
+                if($(this).find("p").find("span").text().trim()!="0")
+                  has_no_answer=false
+              })
+
+              if(!has_no_answer)
+              {
+                return
+              }
+            }
+            else{
               return
             }
           }
