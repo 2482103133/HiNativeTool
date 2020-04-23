@@ -1020,7 +1020,7 @@ function get_user_featured_answer(p_url, buffer) {
     buffer.answers = 0;
   }
   return new Promise((resolve) => {
-    traverse_user_questions(p_url, fap_count, ":has(.has_no_answer)", function (
+    traverse_user_questions(p_url, fap_count, ":not(:has(.has_no_answer))", function (
       res
     ) {
       //该问题已被采纳
