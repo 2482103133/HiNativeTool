@@ -140,6 +140,7 @@ function re_arrange(){
         ":has(.has_no_answer)",
         function (txt, block) {
           let page=to_jq(txt)
+          
           //如果没有回答 也没有人选择回答,就继续
           if(page.find("div[data-answer-id]").length>0)
           {
@@ -303,6 +304,8 @@ function get_info() {
         self_url: p_url,
       });
       log("get self name:" + name + " self url:" + p_url);
+
+      // get_user_info(p_url, name)
     }
   })();
 
@@ -935,15 +938,9 @@ function traverse_user_questions(
   //如果设置为0则代表遍历所有问题
   if(page_count==0)
   {
-    for (const usr in result_buffer) {
-      if (result_buffer.hasOwnProperty(usr)) {
-        const buffer = result_buffer[usr];
-        if( link_equal(buffer.profile_url,p_url) )
-        {
-          page_count=Math.ceil(buffer.info.q_n/10)
-        }
-      }
-    }
+    let req=request_get(p_url,function(){},false,true)
+    let info=get_paint_info(req.responseText)
+    page_count=Math.ceil(info.q_n/10)
   }
 
   return new Promise((resolve) => {
@@ -978,6 +975,7 @@ function traverse_user_questions(
             return false;
           }
         }
+        get_user_info()
 
         //最后一页了,则取消继续查询
         if (page.find(".d_block").length == 0 || blocks.length == 0) {
