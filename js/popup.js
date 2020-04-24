@@ -1,13 +1,25 @@
 function setup_popup() {
   //清空缓存的用户数据
   $("#cached").click(function () {
-    
     clear_cache();
-    mode.ExecuteScript({code:"location.reload()"})
+    mode.ExecuteScript({ code: "location.reload()" });
   });
   //更新缓存的用户数据
   $("#update").click(function () {
     popup_update_cache();
+  });
+  //更新用户信息
+  $("#refresh_profile").click(function () {
+    storage.set(
+      {
+        self_url: {}[0],
+        self_name: {}[0],
+      },
+      (_) => {
+        mode.ExecuteScript({ code: "get_info()" },_=>{});
+        $("#username").get(0).refresh()
+      }
+    );
   });
   //点击添加新语言
   $("#add_language").click(function () {
@@ -21,9 +33,9 @@ function setup_popup() {
           selected_languages: Array.from(new Set(res.selected_languages)),
         },
         function () {
-            binding_selected_languages()
+          binding_selected_languages();
           //刷新列表
-        //   $("#selected_languages").get(0).show_list();
+          //   $("#selected_languages").get(0).show_list();
         }
       );
     });
@@ -70,27 +82,30 @@ function setup_popup() {
   binding_list("blocked_users", $("#blocked_users").get(0));
   binding_list("white_list", $("#white_list").get(0));
 
-  binding_selected_languages()
+  binding_selected_languages();
 }
-function binding_selected_languages(){
-    binding_list("selected_languages", $("#selected_languages").get(0), (list) => {
-        // var that = this;
-        //转化列表显示
-        storage.get(["languages"], function (res) {
-            list.each(function () {
-            $(this).text(res.languages[$(this).text()]);
-          });
+function binding_selected_languages() {
+  binding_list(
+    "selected_languages",
+    $("#selected_languages").get(0),
+    (list) => {
+      // var that = this;
+      //转化列表显示
+      storage.get(["languages"], function (res) {
+        list.each(function () {
+          $(this).text(res.languages[$(this).text()]);
         });
       });
-  }
-
+    }
+  );
+}
 
 function binding_list(key, tbody, onbind = () => {}) {
   ((key, tbody) => {
     let list = [];
     let bind = onbind;
-    let body=$(tbody)
-    let k=key
+    let body = $(tbody);
+    let k = key;
     storage.get([k], function (rslt) {
       list = typeof rslt[k] === "undefined" ? [] : rslt[k];
       show_list();
@@ -103,11 +118,10 @@ function binding_list(key, tbody, onbind = () => {}) {
         storage.set(obj);
       }
       function show_list() {
-       
         body.empty();
         for (const u of list) {
           let tr = $("<tr>");
-          tr.append($("<td value='"+u+"'>" + u + "</td>"));
+          tr.append($("<td value='" + u + "'>" + u + "</td>"));
           let a = $(
             "<a href='#'' style='text-decoration: none' title='Remove this user from the list'>❌</a>"
           );
@@ -131,19 +145,23 @@ function binding_list(key, tbody, onbind = () => {}) {
 function set_binding(key1, check1) {
   let key = key1;
   let check = check1;
-
-  storage.get([key], function (result) {
-    switch (check.type) {
-      case "checkbox":
-        $(check).attr("checked", result[key]);
-        break;
-      default:
-        $(check).val(result[key]);
-    }
-    $(check).change(function () {
-      set_status();
-    });
+  refresh()
+  $(check).change(function () {
+    set_status();
   });
+  function refresh(){
+    storage.get([key], function (result) {
+      switch (check.type) {
+        case "checkbox":
+          $(check).attr("checked", result[key]);
+          break;
+        default:
+          $(check).val(result[key]);
+      }
+     
+    });
+  }
+  check.refresh=refresh
 
   function set_status() {
     let value = (function () {

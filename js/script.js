@@ -22,20 +22,23 @@ $(document).ready(function () {
   window.filling_blocks_count = 0;
   //存放请求的队列
   window.request_queue = [];
-
+  //页面是否正在添加新的提问
   window.appending = false;
-
-  window.only_answered = $("input[data-questions-not-answered-only]").is(
+  //是不是第一次加载完blocks
+  window.first_loaded = true;
+  //是否只查看已回答的问题
+  window.only_answered = jq_must_find(document.body,"input[data-questions-not-answered-only]").is(
     ":checked"
   );
   //请求最小间隔，以免给hinative服务器造成负担
   // request_interval
+
   //开启请求循环
   start_request_interval();
 
+  //获取用户信息和语言信息
   get_info();
-
-  window.first_loaded = true;
+  
   //监听blocks变化
   setInterval(() => {
     if (
@@ -46,48 +49,64 @@ $(document).ready(function () {
       process_multilanguage();
       process_blocking();
       process_scroll();
-
-      let dqf = $(".body[data-questions-feed]");
-      var sorted = dqf.find(".d_block").sort(function (a, b) {
-        return (
-          new Date($(b).find(".timeago").attr("title")).getTime() -
-          new Date($(a).find(".timeago").attr("title")).getTime()
-        );
-      });
-      var arr = dqf.find(".d_block").toArray();
-      var equal = true;
-      for (let i = 0; i < sorted.length; i++) {
-        const a = sorted[i];
-        const b = arr[i];
-        if (a !== b) {
-          equal = false;
-          break;
-        }
-      }
-      if (!equal) {
-        sorted.prependTo(dqf);
-        $("#time_line").remove();
-        for (const ele of sorted) {
-          //七天前的消息线
-          if (
-            $("#time_line").length == 0 &&
-            $(".body[data-questions-feed]").has(ele) &&
-            new Date().getTime() -
-              new Date(jq_must_find(ele, ".timeago").get(0).title).getTime() >
-              86400 * 1000 * validity_duration
-          ) {
-            window.time_line = $(
-              "<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" +
-                validity_duration +
-                "天前的消息</div></div>"
-            );
-            $(ele).before(time_line);
-          }
-        }
-      }
+      process_order();
     }
   }, 200);
+  re_arrange()
+  
+  //每三分钟不活动刷新一次
+  // var timeout;
+  // document.onmousemove = function () {
+  //   clearTimeout(timeout);
+  //   timeout = setTimeout(function () {
+  //     location.reload();
+  //   }, 60 * 1000 * 3);
+  // };
+});
 
+//自动排序问题
+function process_order(){
+  let dqf = $(".body[data-questions-feed]");
+  var sorted = dqf.find(".d_block").sort(function (a, b) {
+    return (
+      new Date($(b).find(".timeago").attr("title")).getTime() -
+      new Date($(a).find(".timeago").attr("title")).getTime()
+    );
+  });
+  var arr = dqf.find(".d_block").toArray();
+  var equal = true;
+  for (let i = 0; i < sorted.length; i++) {
+    const a = sorted[i];
+    const b = arr[i];
+    if (a !== b) {
+      equal = false;
+      break;
+    }
+  }
+  if (!equal) {
+    sorted.prependTo(dqf);
+    $("#time_line").remove();
+    for (const ele of sorted) {
+      //七天前的消息线
+      if (
+        $("#time_line").length == 0 &&
+        $(".body[data-questions-feed]").has(ele) &&
+        new Date().getTime() -
+          new Date(jq_must_find(ele, ".timeago").get(0).title).getTime() >
+          86400 * 1000 * validity_duration
+      ) {
+        window.time_line = $(
+          "<div id='time_line'><div style='height:1px;background-color:black'></div><div style='text-align:center'>接下来是" +
+            validity_duration +
+            "天前的消息</div></div>"
+        );
+        $(ele).before(time_line);
+      }
+    }
+  }
+}
+//重新安排页面,去除广告,添加快捷入口,显示未回答问题等
+function re_arrange(){
   if (rearrange) {
     $("main").append(
       "<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>"
@@ -160,16 +179,8 @@ $(document).ready(function () {
       );
     }
   }
+}
 
-  //每三分钟不活动刷新一次
-  // var timeout;
-  // document.onmousemove = function () {
-  //   clearTimeout(timeout);
-  //   timeout = setTimeout(function () {
-  //     location.reload();
-  //   }, 60 * 1000 * 3);
-  // };
-});
 
 function process_multilanguage() {
   if (first_loaded && $("li[data-next-page]>a").length > 0) {
@@ -363,12 +374,6 @@ function process(ele) {
       questions_info: questions_info,
     });
   }
-
-  // //如果该问题已经被屏蔽,就不用画
-  // if (q_info.blocked) {
-  //     add_block(b_block, false)
-  //     return
-  // }
 
   //如果是屏蔽用户则不用画
   if (!check_block(b_block)) {
@@ -902,10 +907,13 @@ function get_user_info(p_url, usr) {
     });
   });
 }
+
+//判断两个链接id是否相等
 function link_equal(link1,link2)
 {
   return get_tail_number( get_href_without_params(link1))==get_tail_number( get_href_without_params(link2))
 }
+//获得字符串尾数字
 function get_tail_number(str)
 {
   let match=str.match(/\d+$/)
@@ -914,7 +922,7 @@ function get_tail_number(str)
   }
   return null
 }
-
+//遍历一个用户的问题
 function traverse_user_questions(
   p_url,
   count,
@@ -1084,7 +1092,7 @@ function start_request_interval() {
   }, request_interval);
 }
 
-//更新缓存
+//更新缓存的数据
 function update_cache() {
   log("current result_buffer:");
   log(result_buffer);
@@ -1134,7 +1142,3 @@ function update_cache() {
   });
 }
 
-function append_page(index) {
-  let feed = jq_must_find(".question_feeds");
-  feed.append;
-}
