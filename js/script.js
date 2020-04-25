@@ -27,9 +27,10 @@ $(document).ready(function () {
   //是不是第一次加载完blocks
   window.first_loaded = true;
   //是否只查看已回答的问题
-  window.only_answered = jq_must_find(document.body,"input[data-questions-not-answered-only]").is(
-    ":checked"
-  );
+  window.only_answered = jq_must_find(
+    document.body,
+    "input[data-questions-not-answered-only]"
+  ).is(":checked");
   //请求最小间隔，以免给hinative服务器造成负担
   // request_interval
 
@@ -38,7 +39,7 @@ $(document).ready(function () {
 
   //获取用户信息和语言信息
   get_info();
-  
+
   //监听blocks变化
   setInterval(() => {
     if (
@@ -52,8 +53,8 @@ $(document).ready(function () {
       process_order();
     }
   }, 200);
-  re_arrange()
-  
+  re_arrange();
+
   //每三分钟不活动刷新一次
   // var timeout;
   // document.onmousemove = function () {
@@ -65,7 +66,7 @@ $(document).ready(function () {
 });
 
 //自动排序问题
-function process_order(){
+function process_order() {
   let dqf = $(".body[data-questions-feed]");
   var sorted = dqf.find(".d_block").sort(function (a, b) {
     return (
@@ -106,12 +107,13 @@ function process_order(){
   }
 }
 //重新安排页面,去除广告,添加快捷入口,显示未回答问题等
-function re_arrange(){
+function re_arrange() {
   if (rearrange) {
     $("main").append(
       "<div style='text-align:center'>如果需要新的提问,请下滑刷新~~ <br/>scroll down to refresh</div>"
     );
 
+    //添加提问和回答快速入口
     let q = $(
       "<li><a  title='my questions' href='" +
         window.self_url +
@@ -126,62 +128,190 @@ function re_arrange(){
     $(".nav_activity").after(q);
     $(".nav_activity").after(a);
 
-    $(".l_sidebar_container").empty();
+    //等待直到所有数据加载完成
     while (!data_loaded) {}
-    let container=$(".l_sidebar_container")
-    container.append("<div class='feedback_modal'>我未被回答的问题</div>")
-
-    if (typeof self_url !== "undefined") {
-      let ctr=$(".l_sidebar_container")
-      ctr.append()
-      traverse_user_questions(
-        self_url,
-        0,
-        ":has(.has_no_answer)",
-        function (txt, block) {
-          let page=to_jq(txt)
-          
-          //如果没有回答 也没有人选择回答,就继续
-          if(page.find("div[data-answer-id]").length>0)
-          {
-            if( $(page.find(".count")).length!=0){
-              let has_no_answer=true
-              $(page.find(".count")).each(function(){
-                if($(this).find("p").find("span").text().trim()!="0")
-                  has_no_answer=false
-              })
-
-              if(!has_no_answer)
-              {
-                return
-              }
-            }
-            else{
-              return
-            }
-          }
-          console.log("find!");
-          let ele=$(block).clone()
-          let href=$(block).attr("href")
-          let wrapper=$("<div class='wrapper wrapper_fukidashi' style='border: solid;border-width: 1px;margin-bottom: 20px;border-radius: 10px;'></div>")
-          let ques=jq_must_find(ele,".mod_question_content_decorated")
-          let word=jq_must_find(ques,".keyword")
-          
-          ques.append(jq_must_find(ele,".timeago"))
-          word.css("cursor","pointer")
-        
-          word.click(function(){
-            location.href=href
-          })
-          wrapper.css("borderColor","#2c2d30")
-          wrapper.append(ques)
-          $(".l_sidebar_container").append(wrapper);
-        }
-      );
-    }
+    get_unanswered_questions();
   }
 }
 
+function get_unanswered_questions() {
+  if (typeof self_url !== "undefined") {
+    let ctr = $(".l_sidebar_container");
+    let old = ctr.contents();
+    ctr.append("<div class='feedback_modal'>我未被回答的问题</div>");
+    traverse_user_questions(self_url, 0, ":has(.has_no_answer)", function (
+      txt,
+      block
+    ) {
+      let page = to_jq(txt);
+      //如果没有回答 也没有人选择回答,就继续
+      if (page.find("div[data-answer-id]").length > 0) {
+        if ($(page.find(".count")).length != 0) {
+          let has_no_answer = true;
+          $(page.find(".count")).each(function () {
+            if ($(this).find("p").find("span").text().trim() != "0")
+              has_no_answer = false;
+          });
+
+          if (!has_no_answer) {
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      console.log("find!");
+      let ele = $(block).clone();
+      let href = $(block).attr("href");
+      let wrapper = $(
+        "<div class='wrapper wrapper_fukidashi' style='border: solid;border-width: 1px;margin-bottom: 20px;border-radius: 10px;'></div>"
+      );
+      let ques = jq_must_find(ele, ".mod_question_content_decorated");
+      let word = jq_must_find(ques, ".keyword");
+      let timeago = jq_must_find(ele, ".timeago");
+      ques.append(timeago);
+      word.css("cursor", "pointer");
+
+      word.click(function () {
+        location.href = href;
+      });
+      wrapper.css("borderColor", "#2c2d30");
+      let re_ask = $("<span style='cursor: pointer;margin-left:2px'>重新提问</span>");
+
+      // 请求格式如下
+      // let deletepage.find(".new_question").get(0).serialize()
+      // delete
+      // https://hinative.com/zh-CN/questions/16072745?_method: deleteauthenticity_token: 2LYt
+      // new question
+      // authenticity_token: Kls2QleQBbWLxPk2yRSYfHVSFocO+JJs1wAejR4714ACx4IHRSK8ttI3ocqhd0anZMIfj5ZhrWyiSHCbVBVaOg==
+      // source:
+      // type: WhatsayQuestion
+      // question[language_id]: 22
+      // question[question_keywords_attributes][0][name]: 手机欠费了
+      // photo:
+      // image[id]:
+      // audio[id]:
+      // question[supplement]: thank you
+      // question[prior]: 0
+      //获得提问类型
+      let query = new FormData();
+      query.append("source", "");
+
+      let type = txt.match(/(?<=question_type:\s*')\w+(?=')/);
+      if (type == "ChoiceQuestion") {
+        query.append(
+          "question[content]",
+          jq_must_find(page, ".keyword").text()
+        );
+      } else if (type == "DifferenceQuestion") {
+        let i = 0;
+        jq_must_find(page, ".keyword").each(function () {
+          query.append(
+            "question[question_keywords_attributes][][name]",
+            $(this).text()
+          );
+          query.append(
+            "question[question_keywords_attributes][][id]",
+            ""
+          );
+          query.append(
+            "question[question_keywords_attributes][][_destroy]",false
+           ) ;
+          i++;
+        });
+      } else {
+        query.append(
+          "question[question_keywords_attributes][0][name]",
+          jq_must_find(page, ".keyword").text()
+        );
+      }
+
+      query.append("photo", "");
+      query.append("image[id]", "");
+      query.append("audio[id]", "");
+      query.append("question[supplement]", page.find(".desc_box").text().trim());
+      query.append("question[prior]", 0);
+
+      let lang_id = -1;
+      let lang_text = jq_must_find(page, ".tag b").text();
+      log("lang_text:" + lang_text);
+      for (const val in languages) {
+        if (languages.hasOwnProperty(val)) {
+          const text = languages[val];
+
+          if (text.trim() == lang_text) {
+            lang_id = val;
+            break;
+          }
+        }
+      }
+      if (lang_id == -1) {
+        log("未能找到对应语言,请刷新个人信息重试!");
+      }
+      query.append("question[language_id]", lang_id);
+
+      re_ask.click(function () {
+        let req = request_get(
+          "https://hinative.com/zh-CN/questions/new?type=" + type,
+          function () {},
+          false,
+          true
+        );
+        let ap = to_jq(req.responseText);
+        query.append(
+          "authenticity_token",
+          jq_must_find(ap, "input[name='authenticity_token']").val()
+        );
+        // let qry=parse_to_querystring(query)
+        let ok = add_loading(re_ask);
+        mode.unsafeWindow.$.post({
+          url: "https://hinative.com/zh-CN/questions?type=" + type,
+          data: query,
+          processData: false,
+          contentType: false,
+          success: (_) => {
+            ok();
+            delete_question();
+          },
+        });
+
+        timeago.attr("title", new Date().toTimeString());
+      });
+
+      let dlt = $("<span style='cursor: pointer;margin-left:2px' >删除问题</span>");
+      let del_data = {
+        _method: "delete",
+        authenticity_token: jq_must_find(page, "meta[name='csrf-token']").attr(
+          "content"
+        ),
+      };
+
+      dlt.click(function () {
+        delete_question();
+      });
+      function delete_question() {
+        let ok = add_loading(dlt);
+        mode.unsafeWindow.$.post({
+          url: href,
+          data: del_data,
+          success: () => {
+            ok();
+            get_unanswered_questions();
+          },
+        });
+        wrapper.hide();
+      }
+
+      wrapper.append(ques);
+      wrapper.append(re_ask);
+      wrapper.append(dlt);
+      $(".l_sidebar_container").append(wrapper);
+    }).then(function () {
+      old.remove();
+    });
+  }
+}
 
 function process_multilanguage() {
   if (first_loaded && $("li[data-next-page]>a").length > 0) {
@@ -425,19 +555,19 @@ function process(ele) {
       return;
     }
   }
-
-  let loading = null;
-  //添加loading图片
-  if ($(b_block).find(".script_loading").length == 0) {
-    loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`;
-    loading = $(loading);
-    wrapper.append(loading);
-  }
+  let loading_ok = add_loading(wrapper);
+  // let loading = null;
+  // //添加loading图片
+  // if ($(b_block).find(".script_loading").length == 0) {
+  //   loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`;
+  //   loading = $(loading);
+  //   wrapper.append(loading);
+  // }
 
   function success() {
     //更新数据到本地
     update_result_buffer();
-    loading.remove();
+    loading_ok();
   }
 
   //发送请求
@@ -888,7 +1018,7 @@ function get_href(ele) {
   let href = $(ele).attr("href");
   return get_href_without_params(href);
 }
-function get_href_without_params(href){
+function get_href_without_params(href) {
   return href ? href.split("?")[0].trim() : {}[0];
 }
 //获得用户提问，回应率，回答数
@@ -912,18 +1042,19 @@ function get_user_info(p_url, usr) {
 }
 
 //判断两个链接id是否相等
-function link_equal(link1,link2)
-{
-  return get_tail_number( get_href_without_params(link1))==get_tail_number( get_href_without_params(link2))
+function link_equal(link1, link2) {
+  return (
+    get_tail_number(get_href_without_params(link1)) ==
+    get_tail_number(get_href_without_params(link2))
+  );
 }
 //获得字符串尾数字
-function get_tail_number(str)
-{
-  let match=str.match(/\d+$/)
-  if(match){
-    return match[0]
+function get_tail_number(str) {
+  let match = str.match(/\d+$/);
+  if (match) {
+    return match[0];
   }
-  return null
+  return null;
 }
 //遍历一个用户的问题
 function traverse_user_questions(
@@ -936,11 +1067,10 @@ function traverse_user_questions(
   let p_url1 = p_url;
   let page_count = count;
   //如果设置为0则代表遍历所有问题
-  if(page_count==0)
-  {
-    let req=request_get(p_url,function(){},false,true)
-    let info=get_paint_info(req.responseText)
-    page_count=Math.ceil(info.q_n/10)
+  if (page_count == 0) {
+    let req = request_get(p_url, function () {}, false, true);
+    let info = get_paint_info(req.responseText);
+    page_count = Math.ceil(info.q_n / 10);
   }
 
   return new Promise((resolve) => {
@@ -966,7 +1096,7 @@ function traverse_user_questions(
         let page = to_jq(qtxt);
         //获得第一页回答的问题
         let blocks = page.find(".d_block" + block_selector);
-        
+
         function check_out() {
           if (resolved == page_count && blocks_count == answers) {
             resolve();
@@ -975,7 +1105,7 @@ function traverse_user_questions(
             return false;
           }
         }
-        get_user_info()
+        get_user_info();
 
         //最后一页了,则取消继续查询
         if (page.find(".d_block").length == 0 || blocks.length == 0) {
@@ -997,9 +1127,7 @@ function traverse_user_questions(
           request_get(fq_url, function (evt) {
             let qtxt1 = evt.srcElement.response;
             //最后一页
-            if(qtxt1.indexOf("class=\"next\"")<0)
-
-            page_loaded(qtxt1, block);
+            if (qtxt1.indexOf('class="next"') < 0) page_loaded(qtxt1, block);
             resolved_blocks++;
             answers++;
             if (blocks.length == resolved_blocks) {
@@ -1026,17 +1154,20 @@ function get_user_featured_answer(p_url, buffer) {
     buffer.answers = 0;
   }
   return new Promise((resolve) => {
-    traverse_user_questions(p_url, fap_count, ":not(:has(.has_no_answer))", function (
-      res
-    ) {
-      //该问题已被采纳
-      if (res.indexOf("featured_answer_label") > -1) {
-        buffer1.featured_answers++;
-      } else {
-        //未被采纳
+    traverse_user_questions(
+      p_url,
+      fap_count,
+      ":not(:has(.has_no_answer))",
+      function (res) {
+        //该问题已被采纳
+        if (res.indexOf("featured_answer_label") > -1) {
+          buffer1.featured_answers++;
+        } else {
+          //未被采纳
+        }
+        buffer1.answers++;
       }
-      buffer1.answers++;
-    }).then(function () {
+    ).then(function () {
       buffer.time = new Date().getTime();
       resolve(buffer);
     });
@@ -1063,14 +1194,12 @@ function jq_must_find(ele, selector, force = true) {
   }
   return find;
 }
-
-//发送一次get请求
-function request_get(url, callback, async = true, auto = true) {
+function request(method, url, callback, async = true, auto = true) {
   let req = new XMLHttpRequest();
 
   req.__auto = auto;
   if (callback) req.addEventListener("load", callback);
-  req.open("GET", url, async);
+  req.open(method, url, async);
   // req.setRequestHeader('User-Agent','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36')
 
   if (async) request_queue.push(req);
@@ -1078,6 +1207,11 @@ function request_get(url, callback, async = true, auto = true) {
     req.send();
   }
   return req;
+}
+
+//发送一次get请求
+function request_get(url, callback, async = true, auto = true) {
+  return request("GET", url, callback, async, auto);
 }
 
 function start_request_interval() {
@@ -1139,4 +1273,3 @@ function update_cache() {
     alert("用户信息更新完成！");
   });
 }
-

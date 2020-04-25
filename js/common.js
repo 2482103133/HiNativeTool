@@ -170,5 +170,29 @@ function execute_script(script) {
   })
 }
 
+function parse_to_querystring(obj){
+  //转换成query url
+  var esc = encodeURIComponent;
+  
+  var qry = Object.keys(obj)
+    .map((k) => esc(k.toString().replace(/\/\d+$/,"")) + "=" + esc(obj[k]))
+    .join("&");
 
+  return qry
+}
+
+
+function add_loading(ele){
+  let loading = null;
+  //添加loading图片
+  if ($(ele).find(".script_loading").length == 0) {
+    loading = String.raw`<div class="script_loading" style="width: 16px;height: 16px;display: inline-block;background: url(//cdn.hinative.com/packs/media/loadings/default-091d6e81.gif) no-repeat;background-size: 16px 16px;"> </div>`;
+    loading = $(loading);
+    ele.append(loading);
+  }
+  function ok() {
+    loading.remove();
+  }
+  return ok;
+}
 
