@@ -424,7 +424,7 @@ function get_info() {
   //得到自身信息
   (function get_self_username() {
     if (typeof self_name === "undefined") {
-      let p_url = $(".spec_nav_profile>a").get(0).href;
+      let p_url =$(".dropdown_menu").find(".dropdown_item").get(0).href;
       let req = request_get(p_url, null, false);
       let name = to_jq(req.responseText).find(".owner_name>span").text().trim();
       storage.set({
@@ -754,19 +754,15 @@ function get_paint_info(usr_page) {
     //获得用户profile rate
     info.rate = matches[0];
   }
-
-  //获得questions number
-  let numbers = usr_page.match(/(?<=font_numbers_large['"]>)[^<]+/g);
-  // log(txt)
-
-  if (numbers == null) {
-    info.q_n = 0;
-    info.a_n = 0;
-  } else {
-    info.q_n = numbers[0];
-    info.a_n = numbers[1];
+  let jq=to_jq(usr_page)
+  try{
+    info.q_n = parseInt(jq.find(".status_item[href*=questions]").find(".count").text())
+    info.a_n = parseInt(jq.find(".status_item[href*=answers]").find(".count").text())
   }
-
+  catch{
+    info.q_n =0;
+    info.a_n = 0;
+  }
   return info;
 }
 //对需要框框上色
@@ -1015,7 +1011,8 @@ function each_user_blocks(username, handler) {
 }
 
 function get_href(ele) {
-  let href = $(ele).attr("href");
+  let href = $(ele).find("a").get(0).href;
+
   return get_href_without_params(href);
 }
 function get_href_without_params(href) {

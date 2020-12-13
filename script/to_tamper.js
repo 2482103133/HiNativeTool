@@ -4,14 +4,14 @@
 const base_url = "..";
 const fs = require("fs");
 const btoa = require("../node_modules/btoa");
-const minify = require("./node_modules/html-minifier").minify;
+const minify = require("../node_modules/html-minifier").minify;
 
-jsdom = require("./node_modules/jsdom");
+jsdom = require("../node_modules/jsdom");
 const { JSDOM } = jsdom;
 const { window } = new JSDOM();
 const { document } = new JSDOM("").window;
 global.document = document;
-$ = jQuery = require("./node_modules/jquery")(window);
+$ = jQuery = require("../node_modules/jquery")(window);
 
 popup_uri = "html/popup.html";
 js = [];
@@ -78,17 +78,9 @@ function generate() {
     $('#popup').hide();
     })();
 `;
-  // console.log(result)
 
-  // request_get()
   var len = result.match(/\n/g).length;
-//   var len = ";\n;\n;\n".match(/;\n/g).length;
-//   console.log( result.indexOf(";\n"));
-    // .match()
-//   result.replace()
-//   for (const c of result) {
-//     process.stdout.write(c);
-//   }
+
   result = result.replace(/;[\r\n]+/g, ";/*this is generated code don't edit*/\n");
 
   fs.writeFileSync(to_url, result);

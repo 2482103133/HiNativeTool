@@ -1,3 +1,4 @@
+__<font color=red>因为Hinative接口发生重大调整,部分关键接口已不可用,所以遗憾通知该项目已过期(2020/12/13)</font>__  
 # HiNativeTool
 一个基于JavaScript的Chrome Extension.   
 __已添加TamperMonkey插件支持!__  

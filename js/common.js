@@ -137,7 +137,7 @@ function add_script_value(key1, dflt1) {
         let obj = {}
         obj[key] = dflt
         result[key] = dflt
-        log("undefined key:"+key)
+        // log("undefined key:"+key)
         storage.set(obj)
       }
 

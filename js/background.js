@@ -21,7 +21,7 @@ mode.OnPageUpdated(function (tabId, changeInfo, tab) {
   execute_script("window.data_loaded=false")
   //在这里初始化变量
   let obj={
-    "show_log": false,
+    "show_log": true,
     "extension_enabled": true,
     "auto_block": false,
     "need_featured_answer": true,
